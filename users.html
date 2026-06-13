@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ユーザー・ロール管理 — リフォーム見積もり管理</title>
+<style>
+  :root{
+    --ink:#1c2530; --ink-soft:#54606e; --ink-faint:#8a93a0;
+    --line:#e4e7ec; --line-soft:#eef0f3;
+    --surface:#ffffff; --bg:#eef0f3;
+    --primary:#2d4a73; --primary-d:#233a5c; --primary-tint:#e9f0f9;
+    --amber:#9a6b12; --amber-tint:#fbf1dc;
+    --green:#256b46; --green-tint:#e1f1e8;
+    --red:#a63f37; --red-tint:#fae5e2;
+    --violet:#5a45a0; --violet-tint:#ece7fa;
+    --mono:ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace;
+    --sans:"Hiragino Kaku Gothic ProN","Hiragino Sans","Yu Gothic","Noto Sans JP",-apple-system,system-ui,sans-serif;
+    --radius:10px; --shadow:0 1px 2px rgba(28,37,48,.06),0 4px 16px rgba(28,37,48,.05);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:var(--sans);color:var(--ink);background:var(--bg);line-height:1.55;font-feature-settings:"palt";-webkit-font-smoothing:antialiased}
+  .wrap{max-width:980px;margin:0 auto;padding:0 20px 64px}
+  .topbar{background:var(--surface);border-bottom:1px solid var(--line)}
+  .topbar-in{max-width:980px;margin:0 auto;padding:10px 20px;display:flex;align-items:center;gap:14px}
+  .logo{display:flex;align-items:center;gap:9px;font-weight:700;letter-spacing:.02em;font-size:14px}
+  .logo .mark{width:22px;height:22px;border-radius:5px;background:var(--primary);position:relative;flex:none}
+  .logo .mark::before{content:"";position:absolute;inset:5px 5px auto 5px;height:3px;background:#fff;border-radius:2px;box-shadow:0 5px 0 #fff,0 10px 0 rgba(255,255,255,.55)}
+  .crumb{margin-left:auto;font-size:12.5px;color:var(--ink-faint)}
+  .crumb b{color:var(--ink-soft);font-weight:600}
+
+  .page-h{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:24px 0 14px}
+  .page-h h1{font-size:21px;font-weight:700}
+  .spacer{flex:1}
+  .btn{font-family:var(--sans);font-size:13px;font-weight:600;border-radius:8px;padding:9px 16px;cursor:pointer;border:1px solid var(--line);background:var(--surface);color:var(--ink);transition:.12s}
+  .btn:hover{border-color:#c9cfd8;background:#fafbfc}
+  .btn-primary{background:var(--primary);border-color:var(--primary);color:#fff}
+  .btn-primary:hover{background:var(--primary-d)}
+  .btn-primary .plus{font-weight:700;margin-right:5px}
+  .btn-sm{padding:5px 11px;font-size:12px}
+
+  .tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:18px}
+  .tab{font-family:var(--sans);font-size:13.5px;font-weight:600;color:var(--ink-faint);background:none;border:none;padding:11px 16px;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px}
+  .tab:hover{color:var(--ink-soft)}
+  .tab.on{color:var(--primary-d);border-bottom-color:var(--primary)}
+  .pane{display:none} .pane.on{display:block}
+
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
+  table{width:100%;border-collapse:collapse;min-width:620px}
+  .tscroll{overflow-x:auto}
+  thead th{font-size:11px;font-weight:700;letter-spacing:.05em;color:var(--ink-faint);text-align:left;padding:12px 16px;border-bottom:1px solid var(--line);background:#fafbfc;white-space:nowrap}
+  tbody td{padding:13px 16px;border-bottom:1px solid var(--line-soft);font-size:13.5px;vertical-align:middle}
+  tbody tr:last-child td{border-bottom:none}
+  tbody tr.off{opacity:.55}
+  .uname{display:flex;align-items:center;gap:10px}
+  .avatar{width:30px;height:30px;border-radius:50%;background:var(--primary-tint);color:var(--primary-d);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex:none}
+  .uname b{font-weight:600}
+  .login{font-family:var(--mono);font-size:12.5px;color:var(--ink-soft)}
+  .role{font-size:11.5px;font-weight:700;padding:3px 10px;border-radius:999px;white-space:nowrap}
+  .role-admin{color:var(--violet);background:var(--violet-tint)}
+  .role-staff{color:var(--primary-d);background:var(--primary-tint)}
+  .role-viewer{color:var(--ink-soft);background:var(--line-soft)}
+  .state{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600}
+  .state::before{content:"";width:7px;height:7px;border-radius:50%}
+  .state.act{color:var(--green)} .state.act::before{background:var(--green)}
+  .state.inact{color:var(--ink-faint)} .state.inact::before{background:var(--ink-faint)}
+  .lastlogin{font-family:var(--mono);font-size:12px;color:var(--ink-soft)}
+  .rowacts{display:flex;gap:7px;justify-content:flex-end}
+  .lnk{font-size:12px;font-weight:600;color:var(--primary);background:none;border:none;cursor:pointer;padding:3px 4px}
+  .lnk:hover{text-decoration:underline}
+  .lnk.danger{color:var(--red)}
+
+  /* role tab */
+  .rolehead{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:18px}
+  @media(max-width:680px){.rolehead{grid-template-columns:1fr}}
+  .rolecard{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:14px 16px;box-shadow:var(--shadow)}
+  .rolecard .rt{display:flex;align-items:center;gap:8px}
+  .rolecard h3{font-size:14px;font-weight:700}
+  .rolecard .cnt{font-family:var(--mono);font-size:11.5px;color:var(--ink-faint);margin-left:auto}
+  .rolecard p{font-size:12px;color:var(--ink-soft);margin-top:6px}
+
+  .matrix{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
+  .matrix-h{display:flex;align-items:center;padding:14px 18px;border-bottom:1px solid var(--line-soft)}
+  .matrix-h h2{font-size:13.5px;font-weight:700}
+  .mtbl{width:100%;border-collapse:collapse;min-width:560px}
+  .mtbl th{font-size:11.5px;font-weight:700;color:var(--ink-faint);padding:12px 14px;border-bottom:1px solid var(--line);background:#fafbfc}
+  .mtbl th.perm{text-align:left}
+  .mtbl th.rolecol{text-align:center;width:130px}
+  .mtbl td{padding:11px 14px;border-bottom:1px solid var(--line-soft);font-size:13px}
+  .mtbl tr:last-child td{border-bottom:none}
+  .mtbl td.permname{font-weight:500}
+  .mtbl td.permname small{display:block;font-size:11px;color:var(--ink-faint);font-weight:400}
+  .mtbl td.cell{text-align:center}
+  /* checkbox */
+  .chk{appearance:none;width:20px;height:20px;border:1.5px solid var(--line);border-radius:6px;cursor:pointer;position:relative;vertical-align:middle;background:#fff;transition:.1s}
+  .chk:hover{border-color:var(--primary)}
+  .chk:checked{background:var(--primary);border-color:var(--primary)}
+  .chk:checked::after{content:"";position:absolute;left:6px;top:2px;width:5px;height:10px;border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg)}
+  .chk:disabled{cursor:not-allowed;opacity:.6}
+  .chk:disabled:checked{background:var(--violet);border-color:var(--violet)}
+  .matrix-f{display:flex;align-items:center;gap:10px;padding:14px 18px;border-top:1px solid var(--line-soft)}
+  .matrix-f .saved{font-size:12.5px;color:var(--green);font-weight:600;display:none}
+  .matrix-f .saved.on{display:flex;align-items:center;gap:6px}
+
+  /* modal */
+  .overlay{position:fixed;inset:0;background:rgba(20,28,38,.42);display:none;align-items:center;justify-content:center;padding:20px;z-index:40}
+  .overlay.on{display:flex}
+  .modal{background:var(--surface);border-radius:14px;width:100%;max-width:430px;box-shadow:0 20px 60px rgba(20,28,38,.3)}
+  .modal-h{display:flex;align-items:center;justify-content:space-between;padding:18px 20px 14px;border-bottom:1px solid var(--line-soft)}
+  .modal-h h3{font-size:15px;font-weight:700}
+  .modal-h .x{border:none;background:none;font-size:20px;color:var(--ink-faint);cursor:pointer;line-height:1;padding:2px 6px}
+  .modal-b{padding:16px 20px 4px}
+  .mf{margin-bottom:14px}
+  .mf label{display:block;font-size:12px;font-weight:600;color:var(--ink-soft);margin-bottom:5px}
+  .mf input,.mf select{width:100%;font-family:var(--sans);font-size:13.5px;color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:9px 11px;background:#fcfcfd}
+  .mf select{appearance:none;cursor:pointer;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path d='M1 1l4 4 4-4' stroke='%238a93a0' stroke-width='1.5' fill='none' stroke-linecap='round'/></svg>");background-repeat:no-repeat;background-position:right 11px center}
+  .mf input:focus,.mf select:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px var(--primary-tint);background:#fff}
+  .mf.login input{font-family:var(--mono)}
+  .modal-f{display:flex;gap:10px;justify-content:flex-end;padding:14px 20px 20px}
+</style>
+</head>
+<body>
+<div class="topbar"><div class="topbar-in">
+  <div class="logo"><span class="mark"></span>リフォーム見積もり管理</div>
+<style>
+.demo-nav{display:flex;gap:2px;margin-left:8px;flex-wrap:wrap}
+.demo-nav a{font-size:12.5px;font-weight:600;color:#54606e;text-decoration:none;padding:6px 10px;border-radius:7px;white-space:nowrap}
+.demo-nav a:hover{background:#eef0f3;color:#1c2530}
+.demo-nav a.active{background:#e9f0f9;color:#233a5c}
+.demo-tag{margin-left:8px;font-size:10.5px;font-weight:700;letter-spacing:.04em;color:#9a6b12;background:#fbf1dc;padding:2px 8px;border-radius:5px}
+@media(max-width:760px){.demo-nav{display:none}}
+</style>
+<nav class="demo-nav">
+<a href="index.html">概要</a>
+<a href="list.html">一覧</a>
+<a href="new.html">新規</a>
+<a href="detail.html">詳細</a>
+<a href="diff.html">差分</a>
+<a href="users.html">設定</a>
+<span class="demo-tag">サンプル</span>
+</nav>
+<script>(function(){var f=location.pathname.split('/').pop()||'index.html';document.querySelectorAll('.demo-nav a').forEach(function(a){if(a.getAttribute('href')===f)a.classList.add('active');});})();</script>
+  <div class="crumb"><b>設定</b> / ユーザー・ロール管理</div>
+</div></div>
+
+<div class="wrap">
+  <div class="page-h">
+    <h1>ユーザー・ロール管理</h1>
+    <span class="spacer"></span>
+    <button class="btn btn-primary" id="addUserBtn"><span class="plus">＋</span>ユーザーを追加</button>
+  </div>
+
+  <div class="tabs">
+    <button class="tab on" data-pane="users">ユーザー</button>
+    <button class="tab" data-pane="roles">ロールと権限</button>
+  </div>
+
+  <!-- USERS -->
+  <div class="pane on" id="users">
+    <div class="card"><div class="tscroll">
+      <table>
+        <thead><tr><th>ユーザー</th><th>ログインID</th><th>役割</th><th>状態</th><th>最終ログイン</th><th></th></tr></thead>
+        <tbody id="userRows"></tbody>
+      </table>
+    </div></div>
+  </div>
+
+  <!-- ROLES -->
+  <div class="pane" id="roles">
+    <div class="rolehead">
+      <div class="rolecard"><div class="rt"><span class="role role-admin">管理者</span><span class="cnt" id="cAdmin"></span></div><p>すべての操作とユーザー・ロール管理が可能。権限は固定です。</p></div>
+      <div class="rolecard"><div class="rt"><span class="role role-staff">担当者</span><span class="cnt" id="cStaff"></span></div><p>見積の作成・編集・版追加・受注失注の確定まで。管理機能は不可。</p></div>
+      <div class="rolecard"><div class="rt"><span class="role role-viewer">閲覧のみ</span><span class="cnt" id="cViewer"></span></div><p>見積の閲覧のみ。編集・追加はできません。</p></div>
+    </div>
+
+    <div class="matrix">
+      <div class="matrix-h"><h2>権限マトリクス</h2></div>
+      <div class="tscroll">
+        <table class="mtbl">
+          <thead><tr>
+            <th class="perm">操作</th>
+            <th class="rolecol">管理者</th><th class="rolecol">担当者</th><th class="rolecol">閲覧のみ</th>
+          </tr></thead>
+          <tbody id="matrixRows"></tbody>
+        </table>
+      </div>
+      <div class="matrix-f">
+        <button class="btn btn-primary btn-sm" id="saveRoles">権限を保存</button>
+        <span class="saved" id="savedMsg"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>保存しました</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- add user modal -->
+<div class="overlay" id="overlay">
+  <div class="modal">
+    <div class="modal-h"><h3>ユーザーを追加</h3><button class="x" id="closeBtn">×</button></div>
+    <div class="modal-b">
+      <div class="mf"><label>氏名</label><input id="uName" placeholder="例：田村 一郎"></div>
+      <div class="mf login"><label>ログインID</label><input id="uLogin" placeholder="例：tamura"></div>
+      <div class="mf"><label>役割</label><select id="uRole"><option value="staff">担当者</option><option value="admin">管理者</option><option value="viewer">閲覧のみ</option></select></div>
+      <div class="mf login"><label>初期パスワード</label><input id="uPass" placeholder="自動生成 or 入力" value="Temp-2026"></div>
+    </div>
+    <div class="modal-f"><button class="btn" id="cancelBtn">キャンセル</button><button class="btn btn-primary" id="saveUserBtn">追加</button></div>
+  </div>
+</div>
+
+<script>
+  const $ = id => document.getElementById(id);
+  const roleMeta = {admin:{label:"管理者",cls:"role-admin"}, staff:{label:"担当者",cls:"role-staff"}, viewer:{label:"閲覧のみ",cls:"role-viewer"}};
+
+  let users = [
+    {name:"山本 太郎", login:"yamamoto", role:"admin", active:true, last:"2026/06/13 09:12"},
+    {name:"佐藤 健",   login:"sato",     role:"staff", active:true, last:"2026/06/12 17:40"},
+    {name:"鈴木 美咲", login:"suzuki",   role:"staff", active:true, last:"2026/06/11 11:05"},
+    {name:"高橋 修",   login:"takahashi",role:"staff", active:true, last:"2026/06/10 14:22"},
+    {name:"田村 花子", login:"tamura",   role:"viewer",active:true, last:"2026/06/09 10:31"},
+    {name:"中島 隆",   login:"nakajima", role:"staff", active:false,last:"2026/03/20 16:08"},
+  ];
+
+  function initial(n){ return n.trim().charAt(0); }
+  function renderUsers(){
+    $("userRows").innerHTML = users.map((u,i)=>{
+      const r = roleMeta[u.role];
+      return `<tr class="${u.active?'':'off'}">
+        <td><div class="uname"><div class="avatar">${initial(u.name)}</div><b>${u.name}</b></div></td>
+        <td><span class="login">${u.login}</span></td>
+        <td><span class="role ${r.cls}">${r.label}</span></td>
+        <td><span class="state ${u.active?'act':'inact'}">${u.active?'有効':'無効'}</span></td>
+        <td><span class="lastlogin">${u.last}</span></td>
+        <td><div class="rowacts">
+          <button class="lnk" onclick="alert('編集（モック）')">編集</button>
+          <button class="lnk ${u.active?'danger':''}" onclick="toggleUser(${i})">${u.active?'無効化':'有効化'}</button>
+        </div></td>
+      </tr>`;
+    }).join("");
+    // role counts
+    const c = {admin:0,staff:0,viewer:0};
+    users.filter(u=>u.active).forEach(u=>c[u.role]++);
+    $("cAdmin").textContent = `${c.admin}人`;
+    $("cStaff").textContent = `${c.staff}人`;
+    $("cViewer").textContent = `${c.viewer}人`;
+  }
+  window.toggleUser = i => { users[i].active = !users[i].active; renderUsers(); };
+
+  // permissions matrix
+  const perms = [
+    {key:"view",   name:"見積の閲覧", desc:"一覧・詳細の表示"},
+    {key:"create", name:"新規依頼の作成", desc:"見積依頼の登録"},
+    {key:"edit",   name:"依頼情報の編集", desc:"物件以外の依頼内容を変更"},
+    {key:"version",name:"見積書の版追加", desc:"新しい版の追加・差し替え"},
+    {key:"status", name:"状態の変更", desc:"受付〜交渉中などの進行状態"},
+    {key:"result", name:"受注／失注の確定", desc:"案件のクローズ"},
+    {key:"property",name:"物件マスタの編集", desc:"物件情報の登録・修正"},
+    {key:"delete", name:"見積の削除", desc:"依頼・版の削除"},
+    {key:"manage", name:"ユーザー・ロール管理", desc:"本画面の操作"},
+  ];
+  // default grants
+  const grants = {
+    admin:  Object.fromEntries(perms.map(p=>[p.key,true])),
+    staff:  {view:true,create:true,edit:true,version:true,status:true,result:true,property:true,delete:false,manage:false},
+    viewer: {view:true,create:false,edit:false,version:false,status:false,result:false,property:false,delete:false,manage:false},
+  };
+
+  function renderMatrix(){
+    $("matrixRows").innerHTML = perms.map(p=>{
+      const cellFor = role => {
+        const checked = grants[role][p.key] ? "checked" : "";
+        const disabled = role==="admin" ? "disabled" : "";
+        return `<td class="cell"><input type="checkbox" class="chk" data-role="${role}" data-perm="${p.key}" ${checked} ${disabled}></td>`;
+      };
+      return `<tr>
+        <td class="permname">${p.name}<small>${p.desc}</small></td>
+        ${cellFor("admin")}${cellFor("staff")}${cellFor("viewer")}
+      </tr>`;
+    }).join("");
+    $("matrixRows").querySelectorAll(".chk").forEach(cb=>{
+      cb.addEventListener("change", e=>{
+        grants[e.target.dataset.role][e.target.dataset.perm] = e.target.checked;
+        $("savedMsg").classList.remove("on");
+      });
+    });
+  }
+
+  // tabs
+  document.querySelectorAll(".tab").forEach(t=>t.onclick=()=>{
+    document.querySelectorAll(".tab").forEach(x=>x.classList.remove("on"));
+    document.querySelectorAll(".pane").forEach(x=>x.classList.remove("on"));
+    t.classList.add("on"); $(t.dataset.pane).classList.add("on");
+  });
+
+  // modal
+  $("addUserBtn").onclick = ()=>{ $("overlay").classList.add("on"); $("uName").focus(); };
+  const closeM = ()=>$("overlay").classList.remove("on");
+  $("closeBtn").onclick = closeM; $("cancelBtn").onclick = closeM;
+  $("overlay").addEventListener("click", e=>{ if(e.target===$("overlay")) closeM(); });
+  $("saveUserBtn").onclick = ()=>{
+    const name = $("uName").value.trim(), login = $("uLogin").value.trim();
+    if(!name || !login){ if(!name)$("uName").focus(); else $("uLogin").focus(); return; }
+    users.unshift({name, login, role:$("uRole").value, active:true, last:"—"});
+    renderUsers(); closeM();
+    $("uName").value=""; $("uLogin").value="";
+  };
+
+  $("saveRoles").onclick = ()=>$("savedMsg").classList.add("on");
+
+  renderUsers(); renderMatrix();
+</script>
+</body>
+</html>

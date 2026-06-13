@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>見積依頼 詳細 — リフォーム見積もり管理</title>
+<style>
+  :root{
+    --ink:#1c2530; --ink-soft:#54606e; --ink-faint:#8a93a0;
+    --line:#e4e7ec; --line-soft:#eef0f3;
+    --surface:#ffffff; --bg:#eef0f3;
+    --primary:#2d4a73; --primary-d:#233a5c; --primary-tint:#e9f0f9;
+    --amber:#9a6b12; --amber-tint:#fbf1dc;
+    --blue:#1f5e92; --blue-tint:#e4eff8;
+    --violet:#5a45a0; --violet-tint:#ece7fa;
+    --green:#256b46; --green-tint:#e1f1e8;
+    --red:#a63f37; --red-tint:#fae5e2;
+    --gray:#5d6772; --gray-tint:#eceef1;
+    --mono:ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace;
+    --sans:"Hiragino Kaku Gothic ProN","Hiragino Sans","Yu Gothic","Noto Sans JP",-apple-system,system-ui,sans-serif;
+    --radius:10px; --shadow:0 1px 2px rgba(28,37,48,.06),0 4px 16px rgba(28,37,48,.05);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:var(--sans);color:var(--ink);background:var(--bg);line-height:1.6;
+    font-feature-settings:"palt";-webkit-font-smoothing:antialiased}
+  a{color:inherit}
+  .wrap{max-width:1100px;margin:0 auto;padding:0 20px 64px}
+
+  /* top bar */
+  .topbar{background:var(--surface);border-bottom:1px solid var(--line)}
+  .topbar-in{max-width:1100px;margin:0 auto;padding:10px 20px;display:flex;align-items:center;gap:14px}
+  .logo{display:flex;align-items:center;gap:9px;font-weight:700;letter-spacing:.02em;font-size:14px}
+  .logo .mark{width:22px;height:22px;border-radius:5px;background:var(--primary);position:relative;flex:none}
+  .logo .mark::before{content:"";position:absolute;inset:5px 5px auto 5px;height:3px;background:#fff;border-radius:2px;box-shadow:0 5px 0 #fff,0 10px 0 rgba(255,255,255,.55)}
+  .crumb{margin-left:auto;font-size:12.5px;color:var(--ink-faint)}
+  .crumb b{color:var(--ink-soft);font-weight:600}
+
+  /* header card */
+  header.case{padding-top:24px}
+  .case-head{display:flex;flex-wrap:wrap;align-items:flex-start;gap:16px 20px}
+  .case-id{font-size:12px;letter-spacing:.14em;color:var(--ink-faint);font-weight:600}
+  .case-title{font-size:23px;font-weight:700;letter-spacing:.01em;margin-top:2px}
+  .case-sub{font-size:13px;color:var(--ink-soft);margin-top:3px}
+  .case-amount{margin-left:auto;text-align:right}
+  .case-amount .lab{font-size:11px;letter-spacing:.1em;color:var(--ink-faint);font-weight:600}
+  .case-amount .val{font-family:var(--mono);font-size:27px;font-weight:600;letter-spacing:-.01em;color:var(--primary-d);font-variant-numeric:tabular-nums}
+  .case-amount .ver{font-size:12px;color:var(--ink-faint)}
+
+  .ctrlrow{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:18px;padding-bottom:18px;border-bottom:1px solid var(--line)}
+  .field-inline{display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--ink-soft)}
+  select.status,select.result{font-family:var(--sans);font-size:13px;font-weight:600;border:1px solid var(--line);
+    border-radius:7px;padding:6px 28px 6px 11px;background:var(--surface);color:var(--ink);cursor:pointer;
+    appearance:none;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path d='M1 1l4 4 4-4' stroke='%238a93a0' stroke-width='1.5' fill='none' stroke-linecap='round'/></svg>");
+    background-repeat:no-repeat;background-position:right 10px center}
+  .badge{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;padding:4px 11px;border-radius:999px}
+  .badge::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+  .b-amber{color:var(--amber);background:var(--amber-tint)}
+  .b-blue{color:var(--blue);background:var(--blue-tint)}
+  .b-violet{color:var(--violet);background:var(--violet-tint)}
+  .b-green{color:var(--green);background:var(--green-tint)}
+  .b-red{color:var(--red);background:var(--red-tint)}
+  .b-gray{color:var(--gray);background:var(--gray-tint)}
+  .spacer{flex:1}
+  .btn{font-family:var(--sans);font-size:13px;font-weight:600;border-radius:8px;padding:8px 15px;cursor:pointer;border:1px solid var(--line);background:var(--surface);color:var(--ink);transition:.12s}
+  .btn:hover{border-color:#c9cfd8;background:#fafbfc}
+  .btn-primary{background:var(--primary);border-color:var(--primary);color:#fff}
+  .btn-primary:hover{background:var(--primary-d);border-color:var(--primary-d)}
+  .btn-primary .plus{font-weight:700;margin-right:5px}
+
+  /* layout */
+  .grid{display:grid;grid-template-columns:1fr 430px;gap:22px;margin-top:24px;align-items:start}
+  @media(max-width:880px){.grid{grid-template-columns:1fr}}
+  .panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
+  .panel + .panel{margin-top:22px}
+  .panel-h{display:flex;align-items:center;gap:9px;padding:14px 18px;border-bottom:1px solid var(--line-soft)}
+  .panel-h h2{font-size:13px;font-weight:700;letter-spacing:.04em}
+  .panel-h .ico{width:18px;height:18px;flex:none;color:var(--primary)}
+  .panel-b{padding:6px 18px 18px}
+
+  /* field grid */
+  .sec-lab{font-size:11px;font-weight:700;letter-spacing:.1em;color:var(--ink-faint);margin:16px 0 8px;padding-top:14px;border-top:1px dashed var(--line)}
+  .sec-lab:first-child{border-top:none;padding-top:6px;margin-top:6px}
+  .fgrid{display:grid;grid-template-columns:1fr 1fr;gap:2px 22px}
+  @media(max-width:480px){.fgrid{grid-template-columns:1fr}}
+  .f{display:flex;justify-content:space-between;gap:14px;padding:7px 0;border-bottom:1px solid var(--line-soft);font-size:13.5px}
+  .f.full{grid-column:1/-1}
+  .f .k{color:var(--ink-faint);white-space:nowrap}
+  .f .v{color:var(--ink);text-align:right;font-weight:500}
+  .f .v.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  .f .v.link{color:var(--primary);text-decoration:underline;text-underline-offset:2px;cursor:pointer}
+
+  /* version timeline */
+  .vh-add{margin-left:auto}
+  .timeline{position:relative;padding:8px 18px 18px}
+  .vcard{position:relative;border:1px solid var(--line);border-radius:9px;padding:13px 15px;margin-top:12px;background:var(--surface);transition:.15s}
+  .vcard:first-child{margin-top:6px}
+  .vcard.latest{border-color:var(--primary);box-shadow:0 0 0 3px var(--primary-tint)}
+  .vc-top{display:flex;align-items:baseline;gap:10px}
+  .vc-no{font-size:13px;font-weight:700}
+  .vc-latest{font-size:10.5px;font-weight:700;letter-spacing:.06em;color:var(--primary);background:var(--primary-tint);padding:2px 7px;border-radius:5px}
+  .vc-amt{margin-left:auto;font-family:var(--mono);font-size:16px;font-weight:600;font-variant-numeric:tabular-nums}
+  .vc-delta{font-family:var(--mono);font-size:11.5px;font-weight:600;margin-left:7px}
+  .delta-down{color:var(--green)} .delta-up{color:var(--red)} .delta-flat{color:var(--ink-faint)}
+  .vc-meta{display:flex;flex-wrap:wrap;gap:6px 16px;margin-top:8px;font-size:12px;color:var(--ink-soft)}
+  .vc-meta .mi{display:flex;align-items:center;gap:5px}
+  .vc-meta .mi b{font-weight:600;color:var(--ink)}
+  .vc-reason{margin-top:9px;font-size:12.5px;color:var(--ink-soft);background:var(--line-soft);border-radius:6px;padding:7px 10px}
+  .vc-reason span{color:var(--ink-faint);font-weight:600;margin-right:6px}
+  .vc-file{margin-top:9px;display:flex;align-items:center;gap:7px;font-size:12.5px}
+  .vc-file a{color:var(--primary);font-weight:600;text-decoration:none}
+  .vc-file a:hover{text-decoration:underline}
+
+  /* activity log */
+  .log{padding:6px 18px 16px}
+  .li{display:flex;gap:11px;padding:9px 0;border-bottom:1px solid var(--line-soft);font-size:12.5px}
+  .li:last-child{border-bottom:none}
+  .li .dot{width:7px;height:7px;border-radius:50%;background:var(--primary);margin-top:7px;flex:none}
+  .li .lt{color:var(--ink-faint);font-family:var(--mono);font-size:11px;white-space:nowrap}
+  .li .lx b{font-weight:600}
+
+  /* modal */
+  .overlay{position:fixed;inset:0;background:rgba(20,28,38,.42);display:none;align-items:center;justify-content:center;padding:20px;z-index:40}
+  .overlay.on{display:flex}
+  .modal{background:var(--surface);border-radius:14px;width:100%;max-width:460px;box-shadow:0 20px 60px rgba(20,28,38,.3);max-height:92vh;overflow:auto}
+  .modal-h{display:flex;align-items:center;justify-content:space-between;padding:18px 20px 14px;border-bottom:1px solid var(--line-soft)}
+  .modal-h h3{font-size:15px;font-weight:700}
+  .modal-h .x{border:none;background:none;font-size:20px;color:var(--ink-faint);cursor:pointer;line-height:1;padding:2px 6px}
+  .modal-b{padding:16px 20px 4px}
+  .mf{margin-bottom:14px}
+  .mf label{display:block;font-size:12px;font-weight:600;color:var(--ink-soft);margin-bottom:5px}
+  .mf input,.mf textarea{width:100%;font-family:var(--sans);font-size:13.5px;color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:9px 11px;background:#fcfcfd}
+  .mf input:focus,.mf textarea:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px var(--primary-tint);background:#fff}
+  .mf input[readonly]{background:var(--line-soft);color:var(--ink-soft)}
+  .mf textarea{resize:vertical;min-height:64px}
+  .mf .num{font-family:var(--mono)}
+  .mrow{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .modal-f{display:flex;gap:10px;justify-content:flex-end;padding:14px 20px 20px;position:sticky;bottom:0;background:var(--surface)}
+  .hint{font-size:11.5px;color:var(--ink-faint);margin:-6px 0 14px}
+  .mock-flag{display:inline-block;font-size:11px;color:var(--amber);background:var(--amber-tint);padding:3px 9px;border-radius:6px;font-weight:600}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-in">
+    <div class="logo"><span class="mark"></span>リフォーム見積もり管理</div>
+<style>
+.demo-nav{display:flex;gap:2px;margin-left:8px;flex-wrap:wrap}
+.demo-nav a{font-size:12.5px;font-weight:600;color:#54606e;text-decoration:none;padding:6px 10px;border-radius:7px;white-space:nowrap}
+.demo-nav a:hover{background:#eef0f3;color:#1c2530}
+.demo-nav a.active{background:#e9f0f9;color:#233a5c}
+.demo-tag{margin-left:8px;font-size:10.5px;font-weight:700;letter-spacing:.04em;color:#9a6b12;background:#fbf1dc;padding:2px 8px;border-radius:5px}
+@media(max-width:760px){.demo-nav{display:none}}
+</style>
+<nav class="demo-nav">
+<a href="index.html">概要</a>
+<a href="list.html">一覧</a>
+<a href="new.html">新規</a>
+<a href="detail.html">詳細</a>
+<a href="diff.html">差分</a>
+<a href="users.html">設定</a>
+<span class="demo-tag">サンプル</span>
+</nav>
+<script>(function(){var f=location.pathname.split('/').pop()||'index.html';document.querySelectorAll('.demo-nav a').forEach(function(a){if(a.getAttribute('href')===f)a.classList.add('active');});})();</script>
+    <div class="crumb"><b>見積一覧</b> &nbsp;/&nbsp; R2026-0042</div>
+  </div>
+</div>
+
+<div class="wrap">
+  <header class="case">
+    <div class="case-head">
+      <div>
+        <div class="case-id">見積番号 &nbsp;R2026-0042</div>
+        <div class="case-title">グランドメゾン岡山表町 401号</div>
+        <div class="case-sub">岡山市北区表町2-4-18 ／ 担当：山本 ／ 依頼者：田中 様</div>
+      </div>
+      <div class="case-amount">
+        <div class="lab">最新見積額</div>
+        <div class="val" id="headAmount">¥1,265,000</div>
+        <div class="ver" id="headVer">第3版 ・ 2026/06/05 送信</div>
+      </div>
+    </div>
+
+    <div class="ctrlrow">
+      <div class="field-inline">状態
+        <select class="status" id="statusSel" aria-label="状態">
+          <option>受付</option><option>見積中</option><option>提出済</option>
+          <option selected>交渉中</option><option>受注</option><option>失注</option><option>保留</option>
+        </select>
+      </div>
+      <span class="badge b-violet" id="statusBadge">交渉中</span>
+      <div class="field-inline">結果
+        <select class="result" id="resultSel" aria-label="結果">
+          <option selected>未確定</option><option>受注</option><option>失注</option>
+        </select>
+      </div>
+      <span class="spacer"></span>
+      <button class="btn">編集</button>
+      <button class="btn btn-primary" id="addBtn"><span class="plus">＋</span>版を追加</button>
+    </div>
+  </header>
+
+  <div class="grid">
+    <!-- 依頼情報 -->
+    <section>
+      <div class="panel">
+        <div class="panel-h">
+          <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 9h.01M9 13h.01M9 17h.01M15 9h.01M15 13h.01M15 17h.01"/></svg>
+          <h2>依頼情報</h2>
+        </div>
+        <div class="panel-b">
+          <div class="sec-lab">物件情報 <span style="font-weight:500;letter-spacing:0;color:var(--ink-faint)">（物件マスタ）</span></div>
+          <div class="fgrid">
+            <div class="f"><span class="k">物件名</span><span class="v">グランドメゾン岡山表町</span></div>
+            <div class="f"><span class="k">部屋番号</span><span class="v">401号</span></div>
+            <div class="f full"><span class="k">物件住所</span><span class="v">岡山市北区表町2-4-18</span></div>
+            <div class="f"><span class="k">建物面積</span><span class="v num">62.4㎡</span></div>
+            <div class="f"><span class="k">建築年</span><span class="v num">2008年</span></div>
+            <div class="f"><span class="k">間取り</span><span class="v">2LDK</span></div>
+            <div class="f"><span class="k">空の間取り図</span><span class="v link">図面を表示</span></div>
+            <div class="f"><span class="k">鍵情報</span><span class="v">現地キーBOX #4417</span></div>
+            <div class="f"><span class="k">駐車場</span><span class="v">敷地内 No.12</span></div>
+          </div>
+
+          <div class="sec-lab">依頼者情報</div>
+          <div class="fgrid">
+            <div class="f"><span class="k">依頼者名</span><span class="v">田中 様</span></div>
+            <div class="f"><span class="k">売主買主区別</span><span class="v">買主</span></div>
+            <div class="f"><span class="k">家族人数</span><span class="v num">3名</span></div>
+            <div class="f"><span class="k">年齢</span><span class="v">30代・小学生2名</span></div>
+            <div class="f"><span class="k">居住状況</span><span class="v">空室</span></div>
+            <div class="f"><span class="k">退去予定日</span><span class="v num">―</span></div>
+            <div class="f"><span class="k">支払方法</span><span class="v">住宅ローン組込</span></div>
+            <div class="f"><span class="k">入居希望時期</span><span class="v">2026年8月頃</span></div>
+          </div>
+
+          <div class="sec-lab">見積要望</div>
+          <div class="fgrid">
+            <div class="f"><span class="k">希望金額</span><span class="v num">¥1,300,000</span></div>
+            <div class="f"><span class="k">希望金額種別</span><span class="v">上限目安</span></div>
+            <div class="f"><span class="k">見積期限</span><span class="v">通常（約1週間）</span></div>
+            <div class="f"><span class="k">事前打合せ</span><span class="v">希望あり / 5月18日</span></div>
+            <div class="f"><span class="k">相見積もり相手</span><span class="v">有（1社）</span></div>
+            <div class="f"><span class="k">リフォーム要望図</span><span class="v link">図面を表示</span></div>
+            <div class="f full"><span class="k">備考・要望</span><span class="v" style="text-align:left;max-width:62%">水回り（キッチン・浴室）優先。床はLDKのみ張替希望。壁クロスは全室検討中。</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 操作履歴 -->
+      <div class="panel">
+        <div class="panel-h">
+          <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+          <h2>操作履歴</h2>
+        </div>
+        <div class="log" id="logList">
+          <div class="li"><span class="dot"></span><span class="lt">06/05 14:22</span><span class="lx"><b>山本</b> が第3版を追加（¥1,265,000）</span></div>
+          <div class="li"><span class="dot"></span><span class="lt">05/29 09:10</span><span class="lx">状態を <b>提出済 → 交渉中</b> に変更</span></div>
+          <div class="li"><span class="dot"></span><span class="lt">05/28 17:40</span><span class="lx"><b>山本</b> が第2版を追加（¥1,320,000）</span></div>
+          <div class="li"><span class="dot"></span><span class="lt">05/20 11:05</span><span class="lx"><b>山本</b> が第1版を追加・提出（¥1,480,000）</span></div>
+          <div class="li"><span class="dot"></span><span class="lt">05/16 10:32</span><span class="lx">見積依頼を作成</span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 版履歴 -->
+    <section>
+      <div class="panel">
+        <div class="panel-h">
+          <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4v16M4 8h11l-2-2M4 14h13l-2-2"/></svg>
+          <h2>見積書 版履歴</h2>
+          <button class="btn btn-primary vh-add" id="addBtn2" style="padding:6px 12px"><span class="plus">＋</span>版を追加</button>
+        </div>
+        <div class="timeline" id="timeline">
+          <!-- versions injected by JS (newest first) -->
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<!-- modal -->
+<div class="overlay" id="overlay">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="mTitle">
+    <div class="modal-h">
+      <h3 id="mTitle">版を追加</h3>
+      <button class="x" id="closeBtn" aria-label="閉じる">×</button>
+    </div>
+    <div class="modal-b">
+      <p class="hint">既存の依頼情報はそのまま、見積書だけを新しい版として追加します。過去版は残ります。</p>
+      <div class="mrow">
+        <div class="mf"><label>版番号</label><input class="num" id="fVer" readonly></div>
+        <div class="mf"><label>見積金額（円）</label><input class="num" id="fAmt" inputmode="numeric" placeholder="1265000"></div>
+      </div>
+      <div class="mrow">
+        <div class="mf"><label>見積送信日</label><input type="date" id="fSent"></div>
+        <div class="mf"><label>営業確認日</label><input type="date" id="fConf"></div>
+      </div>
+      <div class="mf"><label>変更理由</label><textarea id="fReason" placeholder="例：浴室グレード調整・クロス範囲縮小による値引"></textarea></div>
+      <div class="mf"><label>見積書ファイル</label><input id="fFile" placeholder="例：R2026-0042_v4.pdf"> <span class="mock-flag" style="margin-top:7px">モックのためファイル名のみ</span></div>
+    </div>
+    <div class="modal-f">
+      <button class="btn" id="cancelBtn">キャンセル</button>
+      <button class="btn btn-primary" id="saveBtn">この版を追加</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ---- state (in-memory) ----
+  const yen = n => "¥" + Number(n).toLocaleString("ja-JP");
+  let versions = [
+    {no:1, amt:1480000, sent:"2026/05/20", conf:"2026/05/22", reason:"初回見積（要望ベースの標準仕様）", file:"R2026-0042_v1.pdf"},
+    {no:2, amt:1320000, sent:"2026/05/28", conf:"2026/05/29", reason:"キッチン仕様グレード調整・浴室を既製品サイズに変更", file:"R2026-0042_v2.pdf"},
+    {no:3, amt:1265000, sent:"2026/06/05", conf:"2026/06/06", reason:"壁クロスをLDK＋廊下のみに縮小、端数値引", file:"R2026-0042_v3.pdf"},
+  ];
+
+  const fmtDelta = (cur, prev) => {
+    if(prev==null) return '<span class="vc-delta delta-flat">初回</span>';
+    const d = cur - prev;
+    if(d===0) return '<span class="vc-delta delta-flat">±0</span>';
+    const cls = d<0 ? "delta-down" : "delta-up";
+    const sign = d<0 ? "▼" : "▲";
+    return `<span class="vc-delta ${cls}">${sign}${yen(Math.abs(d))}</span>`;
+  };
+
+  function render(){
+    const tl = document.getElementById("timeline");
+    const sorted = [...versions].sort((a,b)=>b.no-a.no);
+    const latest = sorted[0];
+    tl.innerHTML = sorted.map(v=>{
+      const prev = versions.find(x=>x.no===v.no-1);
+      const isLatest = v.no===latest.no;
+      return `<div class="vcard ${isLatest?'latest':''}">
+        <div class="vc-top">
+          <span class="vc-no">第${v.no}版</span>
+          ${isLatest?'<span class="vc-latest">最新版</span>':''}
+          <span class="vc-amt">${yen(v.amt)}</span>${fmtDelta(v.amt, prev?prev.amt:null)}
+        </div>
+        <div class="vc-meta">
+          <span class="mi">送信 <b>${v.sent||'―'}</b></span>
+          <span class="mi">営業確認 <b>${v.conf||'―'}</b></span>
+        </div>
+        ${v.reason?`<div class="vc-reason"><span>変更理由</span>${v.reason}</div>`:''}
+        <div class="vc-file">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#2d4a73" stroke-width="2"><path d="M14 3v5h5M7 3h8l5 5v11a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/></svg>
+          <a href="#" onclick="return false">${v.file||'（ファイル未登録）'}</a>
+        </div>
+      </div>`;
+    }).join("");
+    // header
+    document.getElementById("headAmount").textContent = yen(latest.amt);
+    document.getElementById("headVer").textContent = `第${latest.no}版 ・ ${latest.sent||'未送信'} 送信`;
+  }
+  render();
+
+  // ---- status badge ----
+  const badgeClass = {
+    "受付":"b-gray","見積中":"b-amber","提出済":"b-blue","交渉中":"b-violet",
+    "受注":"b-green","失注":"b-red","保留":"b-gray"
+  };
+  const statusSel = document.getElementById("statusSel");
+  const statusBadge = document.getElementById("statusBadge");
+  statusSel.addEventListener("change", e=>{
+    const v = e.target.value;
+    statusBadge.textContent = v;
+    statusBadge.className = "badge " + (badgeClass[v]||"b-gray");
+    addLog(`状態を <b>${v}</b> に変更`);
+  });
+
+  // ---- activity log ----
+  function addLog(html){
+    const now = new Date();
+    const mm = String(now.getMonth()+1).padStart(2,"0");
+    const dd = String(now.getDate()).padStart(2,"0");
+    const hh = String(now.getHours()).padStart(2,"0");
+    const mi = String(now.getMinutes()).padStart(2,"0");
+    const li = document.createElement("div");
+    li.className = "li";
+    li.innerHTML = `<span class="dot"></span><span class="lt">${mm}/${dd} ${hh}:${mi}</span><span class="lx">${html}</span>`;
+    const list = document.getElementById("logList");
+    list.insertBefore(li, list.firstChild);
+  }
+
+  // ---- modal ----
+  const overlay = document.getElementById("overlay");
+  function openModal(){
+    const nextNo = Math.max(...versions.map(v=>v.no)) + 1;
+    document.getElementById("fVer").value = "第" + nextNo + "版";
+    document.getElementById("fAmt").value = "";
+    document.getElementById("fReason").value = "";
+    document.getElementById("fFile").value = `R2026-0042_v${nextNo}.pdf`;
+    const today = new Date().toISOString().slice(0,10);
+    document.getElementById("fSent").value = today;
+    document.getElementById("fConf").value = "";
+    overlay.classList.add("on");
+    document.getElementById("fAmt").focus();
+  }
+  function closeModal(){ overlay.classList.remove("on"); }
+  document.getElementById("addBtn").onclick = openModal;
+  document.getElementById("addBtn2").onclick = openModal;
+  document.getElementById("closeBtn").onclick = closeModal;
+  document.getElementById("cancelBtn").onclick = closeModal;
+  overlay.addEventListener("click", e=>{ if(e.target===overlay) closeModal(); });
+  document.addEventListener("keydown", e=>{ if(e.key==="Escape") closeModal(); });
+
+  const dDisp = s => s ? s.replaceAll("-","/") : "";
+  document.getElementById("saveBtn").onclick = ()=>{
+    const amt = parseInt(document.getElementById("fAmt").value.replace(/[^\d]/g,""),10);
+    if(!amt){ document.getElementById("fAmt").focus(); return; }
+    const nextNo = Math.max(...versions.map(v=>v.no)) + 1;
+    versions.push({
+      no: nextNo, amt,
+      sent: dDisp(document.getElementById("fSent").value),
+      conf: dDisp(document.getElementById("fConf").value),
+      reason: document.getElementById("fReason").value.trim(),
+      file: document.getElementById("fFile").value.trim()
+    });
+    render();
+    addLog(`<b>山本</b> が第${nextNo}版を追加（${yen(amt)}）`);
+    closeModal();
+  };
+</script>
+</body>
+</html>

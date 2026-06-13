@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>版の差分 — リフォーム見積もり管理</title>
+<style>
+  :root{
+    --ink:#1c2530; --ink-soft:#54606e; --ink-faint:#8a93a0;
+    --line:#e4e7ec; --line-soft:#eef0f3;
+    --surface:#ffffff; --bg:#eef0f3;
+    --primary:#2d4a73; --primary-d:#233a5c; --primary-tint:#e9f0f9;
+    --amber:#9a6b12; --amber-tint:#fbf1dc; --amber-bg:#fdf7ea;
+    --green:#256b46; --green-tint:#e1f1e8; --green-bg:#eef7f1;
+    --red:#a63f37; --red-tint:#fae5e2; --red-bg:#fcf0ee;
+    --mono:ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace;
+    --sans:"Hiragino Kaku Gothic ProN","Hiragino Sans","Yu Gothic","Noto Sans JP",-apple-system,system-ui,sans-serif;
+    --radius:10px; --shadow:0 1px 2px rgba(28,37,48,.06),0 4px 16px rgba(28,37,48,.05);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:var(--sans);color:var(--ink);background:var(--bg);line-height:1.55;font-feature-settings:"palt";-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1040px;margin:0 auto;padding:0 20px 64px}
+  .topbar{background:var(--surface);border-bottom:1px solid var(--line)}
+  .topbar-in{max-width:1040px;margin:0 auto;padding:10px 20px;display:flex;align-items:center;gap:14px}
+  .logo{display:flex;align-items:center;gap:9px;font-weight:700;letter-spacing:.02em;font-size:14px}
+  .logo .mark{width:22px;height:22px;border-radius:5px;background:var(--primary);position:relative;flex:none}
+  .logo .mark::before{content:"";position:absolute;inset:5px 5px auto 5px;height:3px;background:#fff;border-radius:2px;box-shadow:0 5px 0 #fff,0 10px 0 rgba(255,255,255,.55)}
+  .crumb{margin-left:auto;font-size:12.5px;color:var(--ink-faint)}
+  .crumb b{color:var(--ink-soft);font-weight:600}
+
+  .page-h{padding:24px 0 4px}
+  .page-h h1{font-size:21px;font-weight:700}
+  .page-h .sub{font-size:13px;color:var(--ink-soft);margin-top:3px}
+
+  .comparebar{display:flex;align-items:flex-end;gap:14px;flex-wrap:wrap;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px;margin-top:16px}
+  .vpick{display:flex;flex-direction:column;gap:5px}
+  .vpick .l{font-size:11px;color:var(--ink-faint);font-weight:600;letter-spacing:.04em}
+  select{font-family:var(--sans);font-size:14px;font-weight:600;color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:9px 30px 9px 13px;background:var(--surface);cursor:pointer;appearance:none;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path d='M1 1l4 4 4-4' stroke='%238a93a0' stroke-width='1.5' fill='none' stroke-linecap='round'/></svg>");background-repeat:no-repeat;background-position:right 11px center}
+  select:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px var(--primary-tint)}
+  .arrow{font-size:18px;color:var(--ink-faint);padding-bottom:8px}
+
+  .summary{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:16px}
+  @media(max-width:680px){.summary{grid-template-columns:repeat(2,1fr)}}
+  .scard{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:14px 16px;box-shadow:var(--shadow)}
+  .scard .l{font-size:11.5px;color:var(--ink-faint);font-weight:600}
+  .scard .v{font-family:var(--mono);font-size:22px;font-weight:600;margin-top:4px;font-variant-numeric:tabular-nums;line-height:1.1}
+  .scard .s{font-size:11.5px;color:var(--ink-faint);margin-top:3px}
+  .scard.delta-down .v{color:var(--green)} .scard.delta-up .v{color:var(--red)}
+  .chgcounts{display:flex;gap:8px;flex-wrap:wrap;margin-top:7px}
+  .cc{font-size:11px;font-weight:700;padding:2px 8px;border-radius:5px}
+  .cc-add{color:var(--green);background:var(--green-tint)}
+  .cc-chg{color:var(--amber);background:var(--amber-tint)}
+  .cc-del{color:var(--red);background:var(--red-tint)}
+
+  .tablecard{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);margin-top:18px;overflow:hidden}
+  .tablecard-h{display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--line-soft)}
+  .tablecard-h h2{font-size:13.5px;font-weight:700}
+  .legend{margin-left:auto;display:flex;gap:12px;font-size:11.5px;color:var(--ink-soft);flex-wrap:wrap}
+  .legend span{display:flex;align-items:center;gap:5px}
+  .legend i{width:10px;height:10px;border-radius:3px;display:inline-block}
+  .lg-add{background:var(--green-tint);border:1px solid var(--green)}
+  .lg-chg{background:var(--amber-tint);border:1px solid var(--amber)}
+  .lg-del{background:var(--red-tint);border:1px solid var(--red)}
+  .tscroll{overflow-x:auto}
+  table{width:100%;border-collapse:collapse;min-width:680px}
+  thead th{font-size:11px;font-weight:700;letter-spacing:.05em;color:var(--ink-faint);text-align:left;padding:11px 14px;border-bottom:1px solid var(--line);background:#fafbfc;white-space:nowrap}
+  th.r,td.r{text-align:right}
+  tbody td{padding:11px 14px;border-bottom:1px solid var(--line-soft);font-size:13px;vertical-align:middle}
+  tbody tr:last-child td{border-bottom:none}
+  .row-add{background:var(--green-bg)}
+  .row-del{background:var(--red-bg)}
+  .row-chg{background:var(--amber-bg)}
+  .cat{font-size:11px;color:var(--ink-faint);white-space:nowrap}
+  .name{font-weight:600}
+  .row-del .name{text-decoration:line-through;color:var(--ink-faint)}
+  .num{font-family:var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+  .oldv{color:var(--ink-faint);text-decoration:line-through;font-size:11.5px}
+  .newv{font-weight:600}
+  .to{color:var(--ink-faint);margin:0 4px;font-size:11px}
+  .stat{font-size:11px;font-weight:700;padding:2px 9px;border-radius:999px;white-space:nowrap}
+  .st-add{color:var(--green);background:var(--green-tint)}
+  .st-chg{color:var(--amber);background:var(--amber-tint)}
+  .st-del{color:var(--red);background:var(--red-tint)}
+  .st-keep{color:var(--ink-faint);background:var(--line-soft)}
+  tfoot td{padding:13px 14px;font-weight:700;font-size:13.5px;border-top:2px solid var(--line)}
+  tfoot .num{font-size:15px}
+  .delta-tag{font-family:var(--mono);font-size:12px;font-weight:600;margin-left:8px}
+  .dt-down{color:var(--green)} .dt-up{color:var(--red)}
+
+  .note{font-size:12px;color:var(--ink-faint);margin-top:14px;padding:12px 15px;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);display:flex;gap:9px}
+  .note svg{flex:none;color:var(--primary);margin-top:1px}
+  .toolbar{display:flex;gap:10px;margin-top:16px;justify-content:flex-end;flex-wrap:wrap}
+  .btn{font-family:var(--sans);font-size:13px;font-weight:600;border-radius:8px;padding:9px 16px;cursor:pointer;border:1px solid var(--line);background:var(--surface);color:var(--ink)}
+  .btn:hover{border-color:#c9cfd8;background:#fafbfc}
+  .btn-primary{background:var(--primary);border-color:var(--primary);color:#fff}
+  .btn-primary:hover{background:var(--primary-d)}
+</style>
+</head>
+<body>
+<div class="topbar"><div class="topbar-in">
+  <div class="logo"><span class="mark"></span>リフォーム見積もり管理</div>
+<style>
+.demo-nav{display:flex;gap:2px;margin-left:8px;flex-wrap:wrap}
+.demo-nav a{font-size:12.5px;font-weight:600;color:#54606e;text-decoration:none;padding:6px 10px;border-radius:7px;white-space:nowrap}
+.demo-nav a:hover{background:#eef0f3;color:#1c2530}
+.demo-nav a.active{background:#e9f0f9;color:#233a5c}
+.demo-tag{margin-left:8px;font-size:10.5px;font-weight:700;letter-spacing:.04em;color:#9a6b12;background:#fbf1dc;padding:2px 8px;border-radius:5px}
+@media(max-width:760px){.demo-nav{display:none}}
+</style>
+<nav class="demo-nav">
+<a href="index.html">概要</a>
+<a href="list.html">一覧</a>
+<a href="new.html">新規</a>
+<a href="detail.html">詳細</a>
+<a href="diff.html">差分</a>
+<a href="users.html">設定</a>
+<span class="demo-tag">サンプル</span>
+</nav>
+<script>(function(){var f=location.pathname.split('/').pop()||'index.html';document.querySelectorAll('.demo-nav a').forEach(function(a){if(a.getAttribute('href')===f)a.classList.add('active');});})();</script>
+  <div class="crumb"><b>見積一覧</b> / R2026-0042 / <b>版の差分</b></div>
+</div></div>
+
+<div class="wrap">
+  <div class="page-h">
+    <h1>版の差分プレビュー</h1>
+    <div class="sub">R2026-0042 ／ グランドメゾン岡山表町 401号 ／ 田中 様</div>
+  </div>
+
+  <div class="comparebar">
+    <div class="vpick"><span class="l">比較元（旧）</span>
+      <select id="vOld"><option value="1">第1版 ・ ¥1,480,000</option><option value="2" selected>第2版 ・ ¥1,320,000</option><option value="3">第3版 ・ ¥1,265,000</option></select>
+    </div>
+    <span class="arrow">→</span>
+    <div class="vpick"><span class="l">比較先（新）</span>
+      <select id="vNew"><option value="1">第1版 ・ ¥1,480,000</option><option value="2">第2版 ・ ¥1,320,000</option><option value="3" selected>第3版 ・ ¥1,265,000</option></select>
+    </div>
+  </div>
+
+  <div class="summary" id="summary"></div>
+
+  <div class="tablecard">
+    <div class="tablecard-h">
+      <h2>明細の差分</h2>
+      <div class="legend">
+        <span><i class="lg-add"></i>追加</span><span><i class="lg-chg"></i>変更</span><span><i class="lg-del"></i>削除</span>
+      </div>
+    </div>
+    <div class="tscroll">
+      <table>
+        <thead><tr>
+          <th>工事区分</th><th>品名</th><th class="r">数量</th><th class="r">単価</th><th class="r">金額</th><th>状態</th>
+        </tr></thead>
+        <tbody id="diffRows"></tbody>
+        <tfoot id="diffFoot"></tfoot>
+      </table>
+    </div>
+  </div>
+
+  <div class="note">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M11 12h1v4h1"/></svg>
+    明細レベルの差分はフル版（明細をシステムに取り込む段階）の機能です。軽量版の間は、版ごとの金額と変更理由・見積書ファイルの比較までを表示します。
+  </div>
+
+  <div class="toolbar">
+    <button class="btn">PDFで出力</button>
+    <button class="btn btn-primary" onclick="location.href='detail.html'">詳細に戻る</button>
+  </div>
+</div>
+
+<script>
+  const yen = n => "¥" + Number(n).toLocaleString("ja-JP");
+  const versions = {
+    1:{label:"第1版", items:[
+      {cat:"キッチン", name:"システムキッチン交換（ハイグレード）", qty:1, unit:"式", price:560000},
+      {cat:"浴室", name:"ユニットバス交換（特注サイズ）", qty:1, unit:"式", price:600000},
+      {cat:"内装", name:"壁クロス張替", qty:80, unit:"㎡", price:1500},
+      {cat:"床", name:"フローリング張替（LDK）", qty:20, unit:"㎡", price:8000},
+      {cat:"設備", name:"給排水接続工事", qty:1, unit:"式", price:40000},
+    ]},
+    2:{label:"第2版", items:[
+      {cat:"キッチン", name:"システムキッチン交換（ハイグレード）", qty:1, unit:"式", price:480000},
+      {cat:"浴室", name:"ユニットバス交換（特注サイズ）", qty:1, unit:"式", price:520000},
+      {cat:"内装", name:"壁クロス張替", qty:80, unit:"㎡", price:1500},
+      {cat:"床", name:"フローリング張替（LDK）", qty:20, unit:"㎡", price:8000},
+      {cat:"設備", name:"給排水接続工事", qty:1, unit:"式", price:40000},
+    ]},
+    3:{label:"第3版", items:[
+      {cat:"キッチン", name:"システムキッチン交換（ハイグレード）", qty:1, unit:"式", price:480000},
+      {cat:"浴室", name:"ユニットバス交換（特注サイズ）", qty:1, unit:"式", price:520000},
+      {cat:"内装", name:"壁クロス張替", qty:50, unit:"㎡", price:1500},
+      {cat:"床", name:"フローリング張替（LDK）", qty:20, unit:"㎡", price:8000},
+      {cat:"設備", name:"給排水接続工事", qty:1, unit:"式", price:40000},
+      {cat:"調整", name:"端数値引", qty:1, unit:"式", price:-10000},
+    ]},
+  };
+  const amt = it => it.qty * it.price;
+  const total = v => versions[v].items.reduce((s,it)=>s+amt(it),0);
+
+  function build(){
+    const ov = +document.getElementById("vOld").value;
+    const nv = +document.getElementById("vNew").value;
+    const oldItems = versions[ov].items, newItems = versions[nv].items;
+    const names = [...new Set([...oldItems, ...newItems].map(i=>i.name))];
+
+    let add=0, chg=0, del=0, keep=0;
+    const rows = names.map(nm=>{
+      const o = oldItems.find(i=>i.name===nm);
+      const n = newItems.find(i=>i.name===nm);
+      if(o && !n){ del++; return rowDel(o); }
+      if(!o && n){ add++; return rowAdd(n); }
+      const changed = o.qty!==n.qty || o.price!==n.price;
+      if(changed){ chg++; return rowChg(o,n); }
+      keep++; return rowKeep(n);
+    }).join("");
+    document.getElementById("diffRows").innerHTML = rows;
+
+    const oTot = total(ov), nTot = total(nv), d = nTot - oTot;
+    const pct = oTot ? (d/oTot*100) : 0;
+    const dCls = d<0?"dt-down":(d>0?"dt-up":"");
+    const sign = d>0?"+":"";
+    document.getElementById("diffFoot").innerHTML =
+      `<tr><td colspan="4" class="r">合計</td><td class="r num">${yen(nTot)}</td>
+       <td><span class="delta-tag ${dCls}">${d===0?"±0":sign+yen(d)}</span></td></tr>`;
+
+    document.getElementById("summary").innerHTML = `
+      <div class="scard"><div class="l">旧合計（${versions[ov].label}）</div><div class="v">${yen(oTot)}</div></div>
+      <div class="scard"><div class="l">新合計（${versions[nv].label}）</div><div class="v">${yen(nTot)}</div></div>
+      <div class="scard ${d<0?'delta-down':(d>0?'delta-up':'')}"><div class="l">差額</div><div class="v">${d===0?'±0':sign+yen(d)}</div><div class="s">${sign}${pct.toFixed(1)}%</div></div>
+      <div class="scard"><div class="l">変更点</div>
+        <div class="chgcounts">
+          <span class="cc cc-add">追加 ${add}</span>
+          <span class="cc cc-chg">変更 ${chg}</span>
+          <span class="cc cc-del">削除 ${del}</span>
+        </div>
+        <div class="s">据置 ${keep}件</div>
+      </div>`;
+  }
+
+  const q = (qty,unit)=>`${qty.toLocaleString("ja-JP")}${unit}`;
+  function rowKeep(n){
+    return `<tr><td class="cat">${n.cat}</td><td class="name">${n.name}</td>
+      <td class="r num">${q(n.qty,n.unit)}</td><td class="r num">${yen(n.price)}</td>
+      <td class="r num">${yen(amt(n))}</td><td><span class="stat st-keep">据置</span></td></tr>`;
+  }
+  function rowAdd(n){
+    return `<tr class="row-add"><td class="cat">${n.cat}</td><td class="name">${n.name}</td>
+      <td class="r num">${q(n.qty,n.unit)}</td><td class="r num">${yen(n.price)}</td>
+      <td class="r num newv">${yen(amt(n))}</td><td><span class="stat st-add">追加</span></td></tr>`;
+  }
+  function rowDel(o){
+    return `<tr class="row-del"><td class="cat">${o.cat}</td><td class="name">${o.name}</td>
+      <td class="r num">${q(o.qty,o.unit)}</td><td class="r num">${yen(o.price)}</td>
+      <td class="r num oldv">${yen(amt(o))}</td><td><span class="stat st-del">削除</span></td></tr>`;
+  }
+  function cell(oldVal, newVal, fmt){
+    if(oldVal===newVal) return `<span class="num">${fmt(newVal)}</span>`;
+    return `<span class="num oldv">${fmt(oldVal)}</span><span class="to">→</span><span class="num newv">${fmt(newVal)}</span>`;
+  }
+  function rowChg(o,n){
+    return `<tr class="row-chg"><td class="cat">${n.cat}</td><td class="name">${n.name}</td>
+      <td class="r">${cell(o.qty,n.qty,v=>q(v,n.unit))}</td>
+      <td class="r">${cell(o.price,n.price,yen)}</td>
+      <td class="r">${cell(amt(o),amt(n),yen)}</td>
+      <td><span class="stat st-chg">変更</span></td></tr>`;
+  }
+
+  document.getElementById("vOld").addEventListener("change", build);
+  document.getElementById("vNew").addEventListener("change", build);
+  build();
+</script>
+</body>
+</html>

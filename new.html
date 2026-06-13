@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>新規見積依頼 — リフォーム見積もり管理</title>
+<style>
+  :root{
+    --ink:#1c2530; --ink-soft:#54606e; --ink-faint:#8a93a0;
+    --line:#e4e7ec; --line-soft:#eef0f3;
+    --surface:#ffffff; --bg:#eef0f3;
+    --primary:#2d4a73; --primary-d:#233a5c; --primary-tint:#e9f0f9;
+    --amber:#9a6b12; --amber-tint:#fbf1dc;
+    --green:#256b46; --green-tint:#e1f1e8;
+    --red:#a63f37; --red-tint:#fae5e2;
+    --mono:ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace;
+    --sans:"Hiragino Kaku Gothic ProN","Hiragino Sans","Yu Gothic","Noto Sans JP",-apple-system,system-ui,sans-serif;
+    --radius:10px; --shadow:0 1px 2px rgba(28,37,48,.06),0 4px 16px rgba(28,37,48,.05);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:var(--sans);color:var(--ink);background:var(--bg);line-height:1.55;
+    font-feature-settings:"palt";-webkit-font-smoothing:antialiased}
+  .wrap{max-width:880px;margin:0 auto;padding:0 20px 96px}
+
+  .topbar{background:var(--surface);border-bottom:1px solid var(--line)}
+  .topbar-in{max-width:880px;margin:0 auto;padding:10px 20px;display:flex;align-items:center;gap:14px}
+  .logo{display:flex;align-items:center;gap:9px;font-weight:700;letter-spacing:.02em;font-size:14px}
+  .logo .mark{width:22px;height:22px;border-radius:5px;background:var(--primary);position:relative;flex:none}
+  .logo .mark::before{content:"";position:absolute;inset:5px 5px auto 5px;height:3px;background:#fff;border-radius:2px;box-shadow:0 5px 0 #fff,0 10px 0 rgba(255,255,255,.55)}
+  .crumb{margin-left:auto;font-size:12.5px;color:var(--ink-faint)}
+  .crumb b{color:var(--ink-soft);font-weight:600}
+
+  .page-h{padding:24px 0 6px}
+  .page-h h1{font-size:21px;font-weight:700}
+  .metabar{display:flex;flex-wrap:wrap;gap:10px 22px;align-items:center;margin-top:12px;padding:13px 16px;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
+  .metabar .m{display:flex;flex-direction:column;gap:1px}
+  .metabar .m .l{font-size:11px;color:var(--ink-faint);font-weight:600;letter-spacing:.04em}
+  .metabar .m .v{font-family:var(--mono);font-size:14px;font-weight:600;color:var(--primary-d)}
+  .metabar .staffsel{margin-left:auto;display:flex;flex-direction:column;gap:3px}
+  .metabar .staffsel .l{font-size:11px;color:var(--ink-faint);font-weight:600}
+
+  .panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);margin-top:18px}
+  .panel-h{display:flex;align-items:center;gap:9px;padding:14px 18px;border-bottom:1px solid var(--line-soft)}
+  .panel-h .ico{width:18px;height:18px;color:var(--primary);flex:none}
+  .panel-h h2{font-size:13.5px;font-weight:700;letter-spacing:.03em}
+  .panel-h .note{margin-left:auto;font-size:11.5px;color:var(--ink-faint)}
+  .panel-b{padding:18px}
+
+  /* fields */
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px 18px}
+  @media(max-width:560px){.grid2{grid-template-columns:1fr}}
+  .field{display:flex;flex-direction:column;gap:6px}
+  .field.full{grid-column:1/-1}
+  .field label{font-size:12px;font-weight:600;color:var(--ink-soft)}
+  .field label .req{color:var(--red);margin-left:3px}
+  input[type=text],input[type=number],input[type=date],select,textarea{
+    font-family:var(--sans);font-size:13.5px;color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:9px 11px;background:#fcfcfd;width:100%}
+  input.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  textarea{resize:vertical;min-height:70px}
+  input:focus,select:focus,textarea:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px var(--primary-tint);background:#fff}
+  select{appearance:none;cursor:pointer;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path d='M1 1l4 4 4-4' stroke='%238a93a0' stroke-width='1.5' fill='none' stroke-linecap='round'/></svg>");background-repeat:no-repeat;background-position:right 11px center;padding-right:30px}
+  .field .hint{font-size:11px;color:var(--ink-faint)}
+  .field.invalid input,.field.invalid select,.field.invalid textarea{border-color:var(--red);background:#fffafa}
+  .field .err{font-size:11px;color:var(--red);font-weight:600;display:none}
+  .field.invalid .err{display:block}
+  .prefix{position:relative}
+  .prefix input{padding-left:26px}
+  .prefix::before{content:"¥";position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--ink-faint);font-family:var(--mono);font-size:13px}
+
+  /* segmented radio */
+  .seg{display:inline-flex;flex-wrap:wrap;gap:6px}
+  .seg input{position:absolute;opacity:0;pointer-events:none}
+  .seg label{font-size:13px;font-weight:600;color:var(--ink-soft);border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:8px 14px;cursor:pointer;transition:.12s;margin:0}
+  .seg label:hover{border-color:#c9cfd8}
+  .seg input:checked + label{background:var(--primary-tint);border-color:var(--primary);color:var(--primary-d)}
+  .field.invalid .seg label{border-color:var(--red)}
+
+  /* property mode toggle */
+  .modetoggle{display:inline-flex;background:var(--line-soft);border-radius:9px;padding:3px;gap:3px}
+  .modetoggle button{font-family:var(--sans);font-size:12.5px;font-weight:600;border:none;background:none;color:var(--ink-soft);border-radius:7px;padding:7px 14px;cursor:pointer;transition:.12s}
+  .modetoggle button.on{background:var(--surface);color:var(--primary-d);box-shadow:0 1px 2px rgba(0,0,0,.08)}
+
+  .prefilled-note{font-size:11.5px;color:var(--green);background:var(--green-tint);border-radius:7px;padding:8px 11px;margin-bottom:14px;display:none;align-items:center;gap:7px}
+  .prefilled-note.on{display:flex}
+
+  /* file dropzone */
+  .drop{border:1.5px dashed var(--line);border-radius:9px;padding:14px;display:flex;align-items:center;gap:11px;cursor:pointer;transition:.12s;background:#fcfcfd}
+  .drop:hover{border-color:var(--primary);background:var(--primary-tint)}
+  .drop svg{color:var(--ink-faint);flex:none}
+  .drop .dt{font-size:12.5px;color:var(--ink-soft)}
+  .drop .dt b{color:var(--primary-d)}
+  .drop.has{border-style:solid;border-color:var(--primary);background:var(--primary-tint)}
+  .drop .fname{font-family:var(--mono);font-size:12px;color:var(--primary-d);font-weight:600}
+  .drop .rm{margin-left:auto;border:none;background:none;color:var(--ink-faint);cursor:pointer;font-size:16px;padding:0 4px}
+
+  .cond{display:none}
+  .cond.on{display:flex}
+
+  /* sticky action bar */
+  .actionbar{position:fixed;left:0;right:0;bottom:0;background:rgba(255,255,255,.92);backdrop-filter:blur(8px);border-top:1px solid var(--line);z-index:20}
+  .actionbar-in{max-width:880px;margin:0 auto;padding:12px 20px;display:flex;align-items:center;gap:10px}
+  .actionbar .msg{font-size:12.5px;color:var(--red);font-weight:600;display:none}
+  .actionbar .msg.on{display:block}
+  .spacer{flex:1}
+  .btn{font-family:var(--sans);font-size:13.5px;font-weight:600;border-radius:8px;padding:10px 18px;cursor:pointer;border:1px solid var(--line);background:var(--surface);color:var(--ink);transition:.12s}
+  .btn:hover{border-color:#c9cfd8;background:#fafbfc}
+  .btn-primary{background:var(--primary);border-color:var(--primary);color:#fff}
+  .btn-primary:hover{background:var(--primary-d)}
+
+  /* success */
+  .done{display:none;text-align:center;padding:56px 24px}
+  .done.on{display:block}
+  .done .circle{width:60px;height:60px;border-radius:50%;background:var(--green-tint);color:var(--green);display:flex;align-items:center;justify-content:center;margin:0 auto 18px}
+  .done h2{font-size:18px;font-weight:700}
+  .done .num{font-family:var(--mono);font-size:15px;color:var(--primary-d);font-weight:600;margin-top:6px}
+  .done p{font-size:13px;color:var(--ink-soft);margin-top:8px}
+  .done .acts{margin-top:22px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+  .mock-flag{display:inline-block;font-size:10.5px;color:var(--amber);background:var(--amber-tint);padding:2px 8px;border-radius:5px;font-weight:600;margin-left:6px}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-in">
+    <div class="logo"><span class="mark"></span>リフォーム見積もり管理</div>
+<style>
+.demo-nav{display:flex;gap:2px;margin-left:8px;flex-wrap:wrap}
+.demo-nav a{font-size:12.5px;font-weight:600;color:#54606e;text-decoration:none;padding:6px 10px;border-radius:7px;white-space:nowrap}
+.demo-nav a:hover{background:#eef0f3;color:#1c2530}
+.demo-nav a.active{background:#e9f0f9;color:#233a5c}
+.demo-tag{margin-left:8px;font-size:10.5px;font-weight:700;letter-spacing:.04em;color:#9a6b12;background:#fbf1dc;padding:2px 8px;border-radius:5px}
+@media(max-width:760px){.demo-nav{display:none}}
+</style>
+<nav class="demo-nav">
+<a href="index.html">概要</a>
+<a href="list.html">一覧</a>
+<a href="new.html">新規</a>
+<a href="detail.html">詳細</a>
+<a href="diff.html">差分</a>
+<a href="users.html">設定</a>
+<span class="demo-tag">サンプル</span>
+</nav>
+<script>(function(){var f=location.pathname.split('/').pop()||'index.html';document.querySelectorAll('.demo-nav a').forEach(function(a){if(a.getAttribute('href')===f)a.classList.add('active');});})();</script>
+    <div class="crumb"><b>見積一覧</b> &nbsp;/&nbsp; 新規依頼</div>
+  </div>
+</div>
+
+<div class="wrap">
+  <div id="form">
+    <div class="page-h">
+      <h1>新規見積依頼</h1>
+      <div class="metabar">
+        <div class="m"><span class="l">見積番号（自動採番）</span><span class="v">R2026-0052</span></div>
+        <div class="m"><span class="l">申請日</span><span class="v">2026/06/13</span></div>
+        <div class="staffsel">
+          <span class="l">担当者 <span style="color:var(--red)">*</span></span>
+          <select id="staff" style="min-width:130px"><option value="">選択</option><option selected>山本</option><option>佐藤</option><option>鈴木</option><option>高橋</option></select>
+        </div>
+      </div>
+    </div>
+
+    <!-- 物件 -->
+    <div class="panel">
+      <div class="panel-h">
+        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 9h.01M9 13h.01M9 17h.01M15 9h.01M15 13h.01M15 17h.01"/></svg>
+        <h2>物件情報</h2>
+        <span class="note">物件マスタ</span>
+      </div>
+      <div class="panel-b">
+        <div style="margin-bottom:14px">
+          <div class="modetoggle">
+            <button type="button" id="modeExisting" class="on">既存の物件から選択</button>
+            <button type="button" id="modeNew">新規物件を登録</button>
+          </div>
+        </div>
+
+        <div class="field full" id="pickWrap" style="margin-bottom:14px">
+          <label>登録済みの物件</label>
+          <select id="propPick">
+            <option value="">物件を選択（入力すると自動で埋まります）</option>
+            <option value="0">グランドメゾン岡山表町 401 ／ 岡山市北区表町2-4-18</option>
+            <option value="1">ロイヤルガーデン東岡山 305 ／ 岡山市中区江崎1-7-2</option>
+            <option value="2">リバーサイド岡南 102 ／ 岡山市南区築港緑町3-1</option>
+            <option value="3">ヴェルデ西大寺 204 ／ 岡山市東区西大寺中1-9</option>
+          </select>
+        </div>
+
+        <div class="prefilled-note" id="prefNote">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>
+          物件マスタから自動入力しました。修正する場合は「新規物件を登録」に切り替えてください。
+        </div>
+
+        <div class="grid2">
+          <div class="field"><label>物件名<span class="req">*</span></label><input type="text" id="pName" placeholder="例：グランドメゾン岡山表町 401"><span class="err">物件名を入力してください</span></div>
+          <div class="field"><label>物件住所<span class="req">*</span></label><input type="text" id="pAddr" placeholder="例：岡山市北区表町2-4-18"><span class="err">物件住所を入力してください</span></div>
+          <div class="field"><label>建物面積</label><input type="text" class="num" id="pArea" placeholder="62.4㎡"></div>
+          <div class="field"><label>建築年</label><input type="text" class="num" id="pYear" placeholder="2008年"></div>
+          <div class="field"><label>間取り</label><input type="text" id="pLayout" placeholder="2LDK"></div>
+          <div class="field"><label>鍵情報</label><input type="text" id="pKey" placeholder="現地キーBOX 等"></div>
+          <div class="field"><label>鍵備考（現地ナンバー等）</label><input type="text" id="pKeyNote" placeholder="#4417 など"></div>
+          <div class="field"><label>駐車場</label><input type="text" id="pPark" placeholder="敷地内 No.12 等"></div>
+          <div class="field full"><label>空の間取り図</label>
+            <div class="drop" data-file="fPlanEmpty"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 16V4m0 0L8 8m4-4l4 4M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg><span class="dt"><b>ファイルを選択</b> またはドラッグ&ドロップ</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 依頼内容 -->
+    <div class="panel">
+      <div class="panel-h">
+        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+        <h2>依頼内容</h2>
+        <span class="note">この依頼ごとの情報</span>
+      </div>
+      <div class="panel-b">
+        <div class="grid2">
+          <div class="field"><label>居住状況</label><select id="rResidency"><option value="">選択</option><option>空室</option><option>居住中</option><option>その他</option></select></div>
+          <div class="field"><label>退去予定日</label><input type="date" id="rMoveout"></div>
+          <div class="field"><label>売主買主区別</label><select id="rSB"><option value="">選択</option><option>買主</option><option>売主</option><option>区別なし</option></select></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 依頼者情報 -->
+    <div class="panel">
+      <div class="panel-h">
+        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a7 7 0 0 1 14 0v1"/></svg>
+        <h2>依頼者情報</h2>
+      </div>
+      <div class="panel-b">
+        <div class="grid2">
+          <div class="field"><label>依頼者名<span class="req">*</span></label><input type="text" id="cName" placeholder="例：田中 様"><span class="err">依頼者名を入力してください</span></div>
+          <div class="field"><label>支払方法</label><select id="cPay"><option value="">選択</option><option>住宅ローン組込</option><option>現金</option><option>その他</option></select></div>
+          <div class="field"><label>家族人数</label><input type="text" class="num" id="cFamily" placeholder="3名"></div>
+          <div class="field"><label>年齢</label><input type="text" id="cAge" placeholder="30代・小学生2名 など"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 見積要望 -->
+    <div class="panel">
+      <div class="panel-h">
+        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 13h6M9 17h6"/></svg>
+        <h2>見積要望</h2>
+      </div>
+      <div class="panel-b">
+        <div class="grid2">
+          <div class="field"><label>希望金額</label><div class="prefix"><input type="text" class="num" id="qAmt" inputmode="numeric" placeholder="1,300,000"></div></div>
+          <div class="field"><label>希望金額種別</label><select id="qAmtType"><option value="">選択</option><option>上限額</option><option>目安額</option><option>特になし</option></select></div>
+
+          <div class="field full"><label>見積期限<span class="req">*</span></label>
+            <div class="seg" id="segDeadline">
+              <input type="radio" name="deadline" id="dl1" value="通常"><label for="dl1">通常（約1週間）</label>
+              <input type="radio" name="deadline" id="dl2" value="最短"><label for="dl2">最短（別途回答）</label>
+              <input type="radio" name="deadline" id="dl3" value="急いでいない"><label for="dl3">急いでいない</label>
+            </div>
+            <span class="err">見積期限を選択してください</span>
+          </div>
+
+          <div class="field"><label>事前打合せ希望</label>
+            <div class="seg">
+              <input type="radio" name="pre" id="pre0" value="無" checked><label for="pre0">無</label>
+              <input type="radio" name="pre" id="pre1" value="有"><label for="pre1">有</label>
+            </div>
+          </div>
+          <div class="field cond" id="preDateWrap"><label>事前打合せ希望日</label><input type="date" id="preDate"></div>
+
+          <div class="field"><label>入居希望時期</label><input type="text" id="qMovein" placeholder="2026年8月頃 など"></div>
+
+          <div class="field"><label>相見積もり相手</label>
+            <div class="seg">
+              <input type="radio" name="comp" id="comp0" value="無" checked><label for="comp0">無</label>
+              <input type="radio" name="comp" id="comp1" value="有"><label for="comp1">有</label>
+            </div>
+          </div>
+          <div class="field cond" id="compWrap"><label>相見積もり相手（社名など）</label><input type="text" id="compName" placeholder="例：◯◯リフォーム"></div>
+
+          <div class="field full"><label>リフォーム要望間取り図</label>
+            <div class="drop" data-file="fPlanReform"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 16V4m0 0L8 8m4-4l4 4M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg><span class="dt"><b>ファイルを選択</b> またはドラッグ&ドロップ</span></div>
+          </div>
+
+          <div class="field full"><label>備考・要望</label><textarea id="qNote" placeholder="例：水回り（キッチン・浴室）優先。床はLDKのみ張替希望。"></textarea></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- success -->
+  <div class="done" id="done">
+    <div class="circle"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg></div>
+    <h2>見積依頼を登録しました</h2>
+    <div class="num" id="doneNum">R2026-0052</div>
+    <p>続けて見積書（第1版）を追加できます。<span class="mock-flag">モック表示</span></p>
+    <div class="acts">
+      <button class="btn" onclick="location.reload()">続けて新規登録</button>
+      <button class="btn btn-primary" onclick="location.href='detail.html'">詳細画面を開いて版を追加</button>
+    </div>
+  </div>
+</div>
+
+<div class="actionbar" id="actionbar">
+  <div class="actionbar-in">
+    <span class="msg" id="formMsg">未入力の必須項目があります</span>
+    <span class="spacer"></span>
+    <button class="btn" type="button">一時保存</button>
+    <button class="btn btn-primary" type="button" id="submitBtn">この内容で登録</button>
+  </div>
+</div>
+
+<script>
+  // existing property master (sample)
+  const props = [
+    {name:"グランドメゾン岡山表町 401", addr:"岡山市北区表町2-4-18", area:"62.4㎡", year:"2008年", layout:"2LDK", key:"現地キーBOX", keyNote:"#4417", park:"敷地内 No.12"},
+    {name:"ロイヤルガーデン東岡山 305", addr:"岡山市中区江崎1-7-2", area:"58.0㎡", year:"2012年", layout:"3LDK", key:"管理会社預かり", keyNote:"", park:"なし"},
+    {name:"リバーサイド岡南 102", addr:"岡山市南区築港緑町3-1", area:"71.2㎡", year:"2003年", layout:"3LDK", key:"現地キーBOX", keyNote:"#0102", park:"敷地内 No.5"},
+    {name:"ヴェルデ西大寺 204", addr:"岡山市東区西大寺中1-9", area:"45.6㎡", year:"2015年", layout:"1LDK", key:"オーナー直", keyNote:"", park:"近隣月極"},
+  ];
+
+  const $ = id => document.getElementById(id);
+  const pFields = {pName:"name",pAddr:"addr",pArea:"area",pYear:"year",pLayout:"layout",pKey:"key",pKeyNote:"keyNote",pPark:"park"};
+
+  function setPropLock(lock){
+    Object.keys(pFields).forEach(id=>{ $(id).readOnly = lock; $(id).style.background = lock?"#f3f4f6":""; });
+  }
+
+  // mode toggle
+  function setMode(existing){
+    $("modeExisting").classList.toggle("on", existing);
+    $("modeNew").classList.toggle("on", !existing);
+    $("pickWrap").style.display = existing ? "" : "none";
+    if(!existing){
+      $("prefNote").classList.remove("on");
+      setPropLock(false);
+      $("propPick").value = "";
+    } else {
+      setPropLock(true);
+    }
+  }
+  $("modeExisting").onclick = ()=>setMode(true);
+  $("modeNew").onclick = ()=>{ setMode(false); Object.keys(pFields).forEach(id=>$(id).value=""); };
+  setMode(true);
+
+  // prefill on pick
+  $("propPick").addEventListener("change", e=>{
+    const i = e.target.value;
+    if(i===""){ Object.keys(pFields).forEach(id=>$(id).value=""); $("prefNote").classList.remove("on"); return; }
+    const p = props[+i];
+    Object.entries(pFields).forEach(([id,k])=>$(id).value = p[k]||"");
+    setPropLock(true);
+    $("prefNote").classList.add("on");
+    document.querySelectorAll(".field.invalid").forEach(f=>f.classList.remove("invalid"));
+  });
+
+  // conditional reveals
+  document.querySelectorAll('input[name=pre]').forEach(r=>r.addEventListener("change",()=>{
+    $("preDateWrap").classList.toggle("on", document.getElementById("pre1").checked);
+  }));
+  document.querySelectorAll('input[name=comp]').forEach(r=>r.addEventListener("change",()=>{
+    $("compWrap").classList.toggle("on", document.getElementById("comp1").checked);
+  }));
+
+  // file dropzones (mock)
+  document.querySelectorAll(".drop").forEach(d=>{
+    d.addEventListener("click", ()=>{
+      const inp = document.createElement("input"); inp.type="file";
+      inp.onchange = ()=>{ if(inp.files[0]) showFile(d, inp.files[0].name); };
+      inp.click();
+    });
+    d.addEventListener("dragover", e=>{ e.preventDefault(); d.classList.add("has"); });
+    d.addEventListener("dragleave", ()=>{ if(!d.dataset.fname) d.classList.remove("has"); });
+    d.addEventListener("drop", e=>{ e.preventDefault(); if(e.dataTransfer.files[0]) showFile(d, e.dataTransfer.files[0].name); });
+  });
+  function showFile(d, name){
+    d.dataset.fname = name;
+    d.classList.add("has");
+    d.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2d4a73" stroke-width="2"><path d="M14 3v5h5M7 3h8l5 5v11a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/></svg><span class="fname">${name}</span><button class="rm" title="削除">×</button>`;
+    d.querySelector(".rm").onclick = ev=>{ ev.stopPropagation(); resetDrop(d); };
+  }
+  function resetDrop(d){
+    delete d.dataset.fname; d.classList.remove("has");
+    d.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 16V4m0 0L8 8m4-4l4 4M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg><span class="dt"><b>ファイルを選択</b> またはドラッグ&ドロップ</span>`;
+  }
+
+  // amount thousands separator
+  $("qAmt").addEventListener("input", e=>{
+    const n = e.target.value.replace(/[^\d]/g,"");
+    e.target.value = n ? Number(n).toLocaleString("ja-JP") : "";
+  });
+
+  // validation + submit
+  function fieldWrap(el){ return el.closest(".field") || el.closest(".staffsel"); }
+  $("submitBtn").addEventListener("click", ()=>{
+    document.querySelectorAll(".field.invalid").forEach(f=>f.classList.remove("invalid"));
+    let firstBad = null;
+    const reqText = [["pName"],["pAddr"],["cName"]];
+    reqText.forEach(([id])=>{
+      if(!$(id).value.trim()){ const w=$(id).closest(".field"); w.classList.add("invalid"); firstBad=firstBad||w; }
+    });
+    // staff
+    if(!$("staff").value){ firstBad=firstBad||$("staff"); $("staff").style.borderColor="var(--red)"; }
+    else { $("staff").style.borderColor=""; }
+    // deadline radio
+    if(!document.querySelector('input[name=deadline]:checked')){
+      const w=$("segDeadline").closest(".field"); w.classList.add("invalid"); firstBad=firstBad||w;
+    }
+
+    if(firstBad){
+      $("formMsg").classList.add("on");
+      (firstBad.scrollIntoView ? firstBad : firstBad).scrollIntoView({behavior:"smooth", block:"center"});
+      return;
+    }
+    $("formMsg").classList.remove("on");
+    // success
+    $("form").style.display="none";
+    $("actionbar").style.display="none";
+    $("done").classList.add("on");
+    window.scrollTo({top:0, behavior:"smooth"});
+  });
+</script>
+</body>
+</html>
