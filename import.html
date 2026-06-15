@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>版を追加（Excel取り込み） — リフォーム見積もり管理</title>
+<style>
+  :root{
+    --ink:#1c2530; --ink-soft:#54606e; --ink-faint:#8a93a0;
+    --line:#e4e7ec; --line-soft:#eef0f3;
+    --surface:#ffffff; --bg:#eef0f3;
+    --primary:#2d4a73; --primary-d:#233a5c; --primary-tint:#e9f0f9;
+    --amber:#9a6b12; --amber-tint:#fbf1dc;
+    --green:#256b46; --green-tint:#e1f1e8; --green-bg:#eef7f1;
+    --red:#a63f37; --red-tint:#fae5e2; --red-bg:#fcf0ee;
+    --excel:#1d6f42; --excel-tint:#e4f1ea;
+    --mono:ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace;
+    --sans:"Hiragino Kaku Gothic ProN","Hiragino Sans","Yu Gothic","Noto Sans JP",-apple-system,system-ui,sans-serif;
+    --radius:10px; --shadow:0 1px 2px rgba(28,37,48,.06),0 4px 16px rgba(28,37,48,.05);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:var(--sans);color:var(--ink);background:var(--bg);line-height:1.55;font-feature-settings:"palt";-webkit-font-smoothing:antialiased}
+  .wrap{max-width:880px;margin:0 auto;padding:0 20px 80px}
+  .topbar{background:var(--surface);border-bottom:1px solid var(--line)}
+  .topbar-in{max-width:880px;margin:0 auto;padding:10px 20px;display:flex;align-items:center;gap:14px}
+  .logo{display:flex;align-items:center;gap:9px;font-weight:700;letter-spacing:.02em;font-size:14px}
+  .logo .mark{width:22px;height:22px;border-radius:5px;background:var(--primary);position:relative;flex:none}
+  .logo .mark::before{content:"";position:absolute;inset:5px 5px auto 5px;height:3px;background:#fff;border-radius:2px;box-shadow:0 5px 0 #fff,0 10px 0 rgba(255,255,255,.55)}
+  .demo-nav{display:flex;gap:2px;margin-left:8px;flex-wrap:wrap}
+  .demo-nav a{font-size:12.5px;font-weight:600;color:#54606e;text-decoration:none;padding:6px 10px;border-radius:7px;white-space:nowrap}
+  .demo-nav a:hover{background:#eef0f3;color:#1c2530}
+  .demo-nav a.active{background:#e9f0f9;color:#233a5c}
+  .demo-tag{margin-left:8px;font-size:10.5px;font-weight:700;letter-spacing:.04em;color:var(--amber);background:var(--amber-tint);padding:2px 8px;border-radius:5px}
+  @media(max-width:760px){.demo-nav{display:none}}
+  .crumb{margin-left:auto;font-size:12.5px;color:var(--ink-faint)}
+  .crumb b{color:var(--ink-soft);font-weight:600}
+
+  .page-h{padding:24px 0 4px}
+  .page-h h1{font-size:21px;font-weight:700}
+  .page-h .sub{font-size:13px;color:var(--ink-soft);margin-top:3px}
+
+  /* steps */
+  .steps{display:flex;gap:8px;align-items:center;margin:18px 0 6px;font-size:12px;flex-wrap:wrap}
+  .step{display:flex;align-items:center;gap:7px;color:var(--ink-faint);font-weight:600}
+  .step .n{width:20px;height:20px;border-radius:50%;border:1.5px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:11px;font-family:var(--mono)}
+  .step.on{color:var(--primary-d)} .step.on .n{border-color:var(--primary);background:var(--primary-tint);color:var(--primary-d)}
+  .step.done .n{border-color:var(--green);background:var(--green-tint);color:var(--green)}
+  .steps .sep{flex:none;width:18px;height:1px;background:var(--line)}
+
+  .panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);margin-top:14px}
+  .panel-b{padding:18px}
+
+  /* dropzone */
+  .drop{border:1.5px dashed var(--line);border-radius:12px;padding:34px 20px;text-align:center;cursor:pointer;transition:.14s;background:#fcfcfd}
+  .drop:hover,.drop.hover{border-color:var(--excel);background:var(--excel-tint)}
+  .drop .xls{width:46px;height:46px;border-radius:10px;background:var(--excel-tint);display:flex;align-items:center;justify-content:center;margin:0 auto 12px}
+  .drop h3{font-size:14.5px;font-weight:700}
+  .drop h3 b{color:var(--excel)}
+  .drop p{font-size:12.5px;color:var(--ink-faint);margin-top:6px}
+  .drop .hintrow{margin-top:10px;font-size:11.5px;color:var(--ink-faint)}
+
+  /* parsing */
+  .parsing{display:none;align-items:center;gap:12px;padding:22px 20px}
+  .parsing.on{display:flex}
+  .spinner{width:22px;height:22px;border:2.5px solid var(--line);border-top-color:var(--primary);border-radius:50%;animation:spin .8s linear infinite;flex:none}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .parsing .pt b{font-weight:600}
+  .parsing .pt small{display:block;color:var(--ink-faint);font-size:11.5px}
+
+  /* result */
+  .result{display:none}
+  .result.on{display:block}
+  .filechip{display:flex;align-items:center;gap:10px;padding:11px 14px;background:var(--excel-tint);border:1px solid #c2e2d0;border-radius:9px;margin-bottom:16px}
+  .filechip .fi{width:30px;height:30px;border-radius:7px;background:#fff;border:1px solid #c2e2d0;display:flex;align-items:center;justify-content:center;flex:none}
+  .filechip .fn{font-family:var(--mono);font-size:12.5px;font-weight:600;color:var(--excel)}
+  .filechip .ok{margin-left:auto;font-size:11.5px;font-weight:700;color:var(--green);display:flex;align-items:center;gap:5px}
+  .filechip .re{border:none;background:none;color:var(--ink-faint);font-size:12px;font-weight:600;cursor:pointer;padding:4px 6px}
+  .filechip .re:hover{color:var(--ink)}
+
+  .readout{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+  @media(max-width:560px){.readout{grid-template-columns:1fr}}
+  .ro{background:#fafbfc;border:1px solid var(--line);border-radius:9px;padding:12px 14px}
+  .ro .l{font-size:11px;color:var(--ink-faint);font-weight:600}
+  .ro .v{font-family:var(--mono);font-size:20px;font-weight:600;margin-top:3px;font-variant-numeric:tabular-nums}
+  .ro .v small{font-family:var(--sans);font-size:11.5px;color:var(--ink-faint);font-weight:500}
+  .ro .delta{font-family:var(--mono);font-size:13px;font-weight:600;margin-top:3px}
+  .dt-down{color:var(--green)} .dt-up{color:var(--red)}
+  .chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+  .cc{font-size:11px;font-weight:700;padding:2px 8px;border-radius:5px}
+  .cc-chg{color:var(--amber);background:var(--amber-tint)}
+  .cc-keep{color:var(--ink-faint);background:var(--line-soft)}
+
+  .sub-h{font-size:12px;font-weight:700;letter-spacing:.05em;color:var(--ink-faint);margin:4px 0 8px;display:flex;align-items:center;gap:8px}
+  .sub-h a{margin-left:auto;font-size:12px;font-weight:600;color:var(--primary);text-decoration:none}
+  .sub-h a:hover{text-decoration:underline}
+  .tscroll{overflow-x:auto;border:1px solid var(--line);border-radius:9px}
+  table{width:100%;border-collapse:collapse;min-width:540px}
+  thead th{font-size:10.5px;font-weight:700;letter-spacing:.04em;color:var(--ink-faint);text-align:left;padding:9px 12px;border-bottom:1px solid var(--line);background:#fafbfc;white-space:nowrap}
+  th.r,td.r{text-align:right}
+  tbody td{padding:9px 12px;border-bottom:1px solid var(--line-soft);font-size:12.5px}
+  tbody tr:last-child td{border-bottom:none}
+  .num{font-family:var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+  .cat{font-size:10.5px;color:var(--ink-faint)}
+  tr.chg{background:var(--amber-bg)}
+  .oldv{color:var(--ink-faint);text-decoration:line-through;font-size:11px}
+  .to{color:var(--ink-faint);margin:0 3px;font-size:10px}
+  .tag{font-size:10px;font-weight:700;padding:1px 7px;border-radius:999px}
+  .tag-chg{color:var(--amber);background:var(--amber-tint)}
+  .tag-keep{color:var(--ink-faint);background:var(--line-soft)}
+
+  .form-row{display:grid;grid-template-columns:140px 1fr;gap:12px;margin-top:16px;align-items:start}
+  @media(max-width:560px){.form-row{grid-template-columns:1fr}}
+  .form-row > .lab{font-size:12px;font-weight:600;color:var(--ink-soft);padding-top:9px}
+  input,textarea{font-family:var(--sans);font-size:13.5px;color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:9px 11px;background:#fcfcfd;width:100%}
+  input:focus,textarea:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px var(--primary-tint);background:#fff}
+  textarea{resize:vertical;min-height:60px}
+  .verno{font-family:var(--mono);font-size:14px;font-weight:700;color:var(--primary-d);padding-top:9px}
+
+  .note{font-size:12px;color:var(--ink-faint);margin-top:16px;padding:11px 14px;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);display:flex;gap:9px}
+  .note svg{flex:none;color:var(--primary);margin-top:1px}
+
+  .actionbar{position:fixed;left:0;right:0;bottom:0;background:rgba(255,255,255,.92);backdrop-filter:blur(8px);border-top:1px solid var(--line);z-index:20}
+  .actionbar-in{max-width:880px;margin:0 auto;padding:12px 20px;display:flex;align-items:center;gap:10px;justify-content:flex-end}
+  .btn{font-family:var(--sans);font-size:13.5px;font-weight:600;border-radius:8px;padding:10px 18px;cursor:pointer;border:1px solid var(--line);background:var(--surface);color:var(--ink)}
+  .btn:hover{border-color:#c9cfd8;background:#fafbfc}
+  .btn:disabled{opacity:.5;cursor:not-allowed}
+  .btn-primary{background:var(--primary);border-color:var(--primary);color:#fff}
+  .btn-primary:hover:not(:disabled){background:var(--primary-d)}
+
+  .done{display:none;text-align:center;padding:50px 24px}
+  .done.on{display:block}
+  .done .circle{width:58px;height:58px;border-radius:50%;background:var(--green-tint);color:var(--green);display:flex;align-items:center;justify-content:center;margin:0 auto 16px}
+  .done h2{font-size:18px;font-weight:700}
+  .done .num{font-family:var(--mono);font-size:14px;color:var(--primary-d);font-weight:600;margin-top:6px}
+  .done .acts{margin-top:20px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+</style>
+</head>
+<body>
+<div class="topbar"><div class="topbar-in">
+  <div class="logo"><span class="mark"></span>リフォーム見積もり管理</div>
+  <nav class="demo-nav">
+    <a href="index.html">概要</a>
+    <a href="list.html">一覧</a>
+    <a href="new.html">新規</a>
+    <a href="detail.html">詳細</a>
+<a href="chat.html">チャット</a>
+    <a href="import.html" class="active">取込</a>
+    <a href="diff.html">差分</a>
+    <a href="users.html">設定</a>
+    <span class="demo-tag">サンプル</span>
+  </nav>
+  <div class="crumb"><b>R2026-0042</b> / 版を追加</div>
+</div></div>
+
+<div class="wrap">
+  <div id="flow">
+    <div class="page-h">
+      <h1>版を追加（Excel取り込み）</h1>
+      <div class="sub">R2026-0042 ／ グランドメゾン岡山表町 401号 ／ 現在の最新：第3版 ¥1,265,000</div>
+    </div>
+
+    <div class="steps">
+      <div class="step on" id="st1"><span class="n">1</span>アップロード</div>
+      <span class="sep"></span>
+      <div class="step" id="st2"><span class="n">2</span>内容確認</div>
+      <span class="sep"></span>
+      <div class="step" id="st3"><span class="n">3</span>登録</div>
+    </div>
+
+    <!-- upload -->
+    <div class="panel" id="uploadPanel">
+      <div class="panel-b">
+        <div class="drop" id="drop">
+          <div class="xls">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#1d6f42" stroke-width="2"><path d="M14 3v5h5M7 3h8l5 5v11a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M9.5 12l2 2.5 2-2.5M9.5 17l2-2.5 2 2.5" stroke-linecap="round"/></svg>
+          </div>
+          <h3>見積書Excelを<b>ドラッグ&ドロップ</b> または <b>選択</b></h3>
+          <p>.xlsx / .xls に対応。固定テンプレートから合計・明細を自動で読み取ります。</p>
+          <div class="hintrow">※ このサンプルでは、選択すると読み取り例を表示します（実ファイルは解析しません）</div>
+        </div>
+        <div class="parsing" id="parsing">
+          <div class="spinner"></div>
+          <div class="pt"><b>Excelを読み取り中…</b><small>テンプレートを判定し、合計と明細を抽出しています</small></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- result -->
+    <div class="result" id="result">
+      <div class="panel"><div class="panel-b">
+        <div class="filechip">
+          <div class="fi"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1d6f42" stroke-width="2"><path d="M14 3v5h5M7 3h8l5 5v11a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/></svg></div>
+          <span class="fn">R2026-0042_v4.xlsx</span>
+          <span class="ok"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>テンプレ認識：見積書 v2</span>
+          <button class="re" id="reupload">やり直す</button>
+        </div>
+
+        <div class="readout">
+          <div class="ro"><div class="l">読み取った合計（自動）</div><div class="v">¥1,210,000</div></div>
+          <div class="ro"><div class="l">前版（第3版 ¥1,265,000）との差</div>
+            <div class="delta dt-down">−¥55,000 <span style="color:var(--ink-faint);font-weight:500">（−4.3%）</span></div>
+            <div class="chips"><span class="cc cc-chg">変更 2</span><span class="cc cc-keep">据置 4</span></div>
+          </div>
+        </div>
+
+        <div class="sub-h">抽出した明細（前版との差分つき）<a href="diff.html">差分を詳しく見る →</a></div>
+        <div class="tscroll">
+          <table>
+            <thead><tr><th>工事区分</th><th>品名</th><th class="r">数量</th><th class="r">金額</th><th>状態</th></tr></thead>
+            <tbody id="lines"></tbody>
+          </table>
+        </div>
+
+        <div class="form-row"><div class="lab">版番号</div><div class="verno">第4版（自動採番）</div></div>
+        <div class="form-row"><div class="lab">見積送信日</div><div><input type="date" id="sentDate"></div></div>
+        <div class="form-row"><div class="lab">変更理由</div><div><textarea id="reason" placeholder="例：フローリング範囲の縮小・端数値引の調整">フローリング張替を14㎡に縮小、端数値引を拡大</textarea></div></div>
+
+        <div class="note">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M11 12h1v4h1"/></svg>
+          固定テンプレートのため、合計・明細を自動抽出しています。様式（合計や明細表の位置）が変わると、読み取り設定の更新が必要です。元のExcelは版の添付としてそのまま保存されます。
+        </div>
+      </div></div>
+    </div>
+  </div>
+
+  <!-- success -->
+  <div class="done" id="done">
+    <div class="circle"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg></div>
+    <h2>第4版を登録しました</h2>
+    <div class="num">R2026-0042 ・ ¥1,210,000</div>
+    <div class="acts">
+      <button class="btn" onclick="location.href='diff.html'">差分を確認</button>
+      <button class="btn btn-primary" onclick="location.href='detail.html'">詳細に戻る</button>
+    </div>
+  </div>
+</div>
+
+<div class="actionbar" id="actionbar" style="display:none">
+  <div class="actionbar-in">
+    <button class="btn" onclick="location.href='detail.html'">キャンセル</button>
+    <button class="btn btn-primary" id="submitBtn">この内容で第4版を登録</button>
+  </div>
+</div>
+
+<script>
+  const $ = id => document.getElementById(id);
+  // extracted lines for v4, with diff status vs v3
+  const lines = [
+    {cat:"キッチン", name:"システムキッチン交換（ハイグレード）", qty:"1式", amt:480000, st:"keep"},
+    {cat:"浴室", name:"ユニットバス交換（特注サイズ）", qty:"1式", amt:520000, st:"keep"},
+    {cat:"内装", name:"壁クロス張替", qty:"50㎡", amt:75000, st:"keep"},
+    {cat:"床", name:"フローリング張替（LDK）", qty:"20㎡→14㎡", amt:[160000,112000], st:"chg"},
+    {cat:"設備", name:"給排水接続工事", qty:"1式", amt:40000, st:"keep"},
+    {cat:"調整", name:"端数値引", qty:"1式", amt:[-10000,-17000], st:"chg"},
+  ];
+  const yen = n => (n<0?"−":"")+"¥"+Math.abs(n).toLocaleString("ja-JP");
+
+  function renderLines(){
+    $("lines").innerHTML = lines.map(l=>{
+      const amtCell = Array.isArray(l.amt)
+        ? `<span class="num oldv">${yen(l.amt[0])}</span><span class="to">→</span><span class="num">${yen(l.amt[1])}</span>`
+        : `<span class="num">${yen(l.amt)}</span>`;
+      const tag = l.st==="chg" ? `<span class="tag tag-chg">変更</span>` : `<span class="tag tag-keep">据置</span>`;
+      return `<tr class="${l.st==='chg'?'chg':''}"><td class="cat">${l.cat}</td><td>${l.name}</td>
+        <td class="r num">${l.qty}</td><td class="r">${amtCell}</td><td>${tag}</td></tr>`;
+    }).join("");
+  }
+  renderLines();
+  $("sentDate").value = "2026-06-13";
+
+  function startParse(){
+    $("drop").style.display="none";
+    $("parsing").classList.add("on");
+    setTimeout(()=>{
+      $("parsing").classList.remove("on");
+      $("uploadPanel").style.display="none";
+      $("result").classList.add("on");
+      $("actionbar").style.display="block";
+      $("st1").classList.remove("on"); $("st1").classList.add("done");
+      $("st2").classList.add("on");
+      window.scrollTo({top:0,behavior:"smooth"});
+    }, 1100);
+  }
+
+  const drop = $("drop");
+  drop.addEventListener("click", ()=>{
+    const inp=document.createElement("input"); inp.type="file"; inp.accept=".xlsx,.xls";
+    inp.onchange=()=>startParse(); inp.click();
+  });
+  drop.addEventListener("dragover", e=>{e.preventDefault();drop.classList.add("hover");});
+  drop.addEventListener("dragleave", ()=>drop.classList.remove("hover"));
+  drop.addEventListener("drop", e=>{e.preventDefault();startParse();});
+
+  $("reupload").onclick = ()=>{
+    $("result").classList.remove("on");
+    $("actionbar").style.display="none";
+    $("uploadPanel").style.display="";
+    $("drop").style.display="";
+    $("st2").classList.remove("on");
+    $("st1").classList.remove("done"); $("st1").classList.add("on");
+  };
+
+  $("submitBtn").onclick = ()=>{
+    $("st2").classList.remove("on"); $("st2").classList.add("done");
+    $("st3").classList.add("done");
+    $("flow").style.display="none";
+    $("actionbar").style.display="none";
+    $("done").classList.add("on");
+    window.scrollTo({top:0,behavior:"smooth"});
+  };
+</script>
+</body>
+</html>

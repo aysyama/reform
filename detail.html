@@ -157,6 +157,8 @@
 <a href="list.html">一覧</a>
 <a href="new.html">新規</a>
 <a href="detail.html">詳細</a>
+<a href="chat.html">チャット</a>
+<a href="import.html">取込</a>
 <a href="diff.html">差分</a>
 <a href="users.html">設定</a>
 <span class="demo-tag">サンプル</span>
@@ -297,7 +299,7 @@
         <div class="mf"><label>営業確認日</label><input type="date" id="fConf"></div>
       </div>
       <div class="mf"><label>変更理由</label><textarea id="fReason" placeholder="例：浴室グレード調整・クロス範囲縮小による値引"></textarea></div>
-      <div class="mf"><label>見積書ファイル</label><input id="fFile" placeholder="例：R2026-0042_v4.pdf"> <span class="mock-flag" style="margin-top:7px">モックのためファイル名のみ</span></div>
+      <div class="mf"><label>見積書ファイル</label><input id="fFile" placeholder="例：R2026-0042_v4.xlsx"> <span class="mock-flag" style="margin-top:7px">モックのためファイル名のみ</span></div>
     </div>
     <div class="modal-f">
       <button class="btn" id="cancelBtn">キャンセル</button>
@@ -310,9 +312,9 @@
   // ---- state (in-memory) ----
   const yen = n => "¥" + Number(n).toLocaleString("ja-JP");
   let versions = [
-    {no:1, amt:1480000, sent:"2026/05/20", conf:"2026/05/22", reason:"初回見積（要望ベースの標準仕様）", file:"R2026-0042_v1.pdf"},
-    {no:2, amt:1320000, sent:"2026/05/28", conf:"2026/05/29", reason:"キッチン仕様グレード調整・浴室を既製品サイズに変更", file:"R2026-0042_v2.pdf"},
-    {no:3, amt:1265000, sent:"2026/06/05", conf:"2026/06/06", reason:"壁クロスをLDK＋廊下のみに縮小、端数値引", file:"R2026-0042_v3.pdf"},
+    {no:1, amt:1480000, sent:"2026/05/20", conf:"2026/05/22", reason:"初回見積（要望ベースの標準仕様）", file:"R2026-0042_v1.xlsx"},
+    {no:2, amt:1320000, sent:"2026/05/28", conf:"2026/05/29", reason:"キッチン仕様グレード調整・浴室を既製品サイズに変更", file:"R2026-0042_v2.xlsx"},
+    {no:3, amt:1265000, sent:"2026/06/05", conf:"2026/06/06", reason:"壁クロスをLDK＋廊下のみに縮小、端数値引", file:"R2026-0042_v3.xlsx"},
   ];
 
   const fmtDelta = (cur, prev) => {
@@ -389,7 +391,7 @@
     document.getElementById("fVer").value = "第" + nextNo + "版";
     document.getElementById("fAmt").value = "";
     document.getElementById("fReason").value = "";
-    document.getElementById("fFile").value = `R2026-0042_v${nextNo}.pdf`;
+    document.getElementById("fFile").value = `R2026-0042_v${nextNo}.xlsx`;
     const today = new Date().toISOString().slice(0,10);
     document.getElementById("fSent").value = today;
     document.getElementById("fConf").value = "";
@@ -397,8 +399,8 @@
     document.getElementById("fAmt").focus();
   }
   function closeModal(){ overlay.classList.remove("on"); }
-  document.getElementById("addBtn").onclick = openModal;
-  document.getElementById("addBtn2").onclick = openModal;
+  document.getElementById("addBtn").onclick = ()=>location.href='import.html';
+  document.getElementById("addBtn2").onclick = ()=>location.href='import.html';
   document.getElementById("closeBtn").onclick = closeModal;
   document.getElementById("cancelBtn").onclick = closeModal;
   overlay.addEventListener("click", e=>{ if(e.target===overlay) closeModal(); });

@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>チャット — リフォーム見積もり管理</title>
+<style>
+  :root{
+    --ink:#1c2530; --ink-soft:#54606e; --ink-faint:#8a93a0;
+    --line:#e4e7ec; --line-soft:#eef0f3;
+    --surface:#ffffff; --bg:#eef0f3;
+    --primary:#2d4a73; --primary-d:#233a5c; --primary-tint:#e9f0f9;
+    --amber:#9a6b12; --amber-tint:#fbf1dc;
+    --violet:#5a45a0; --violet-tint:#ece7fa;
+    --green:#256b46; --green-tint:#e1f1e8;
+    --mono:ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace;
+    --sans:"Hiragino Kaku Gothic ProN","Hiragino Sans","Yu Gothic","Noto Sans JP",-apple-system,system-ui,sans-serif;
+    --radius:10px; --shadow:0 1px 2px rgba(28,37,48,.06),0 4px 16px rgba(28,37,48,.05);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:var(--sans);color:var(--ink);background:var(--bg);line-height:1.55;font-feature-settings:"palt";-webkit-font-smoothing:antialiased;padding-bottom:96px}
+  .wrap{max-width:780px;margin:0 auto;padding:0 20px}
+  .topbar{background:var(--surface);border-bottom:1px solid var(--line)}
+  .topbar-in{max-width:780px;margin:0 auto;padding:10px 20px;display:flex;align-items:center;gap:14px}
+  .logo{display:flex;align-items:center;gap:9px;font-weight:700;letter-spacing:.02em;font-size:14px}
+  .logo .mark{width:22px;height:22px;border-radius:5px;background:var(--primary);position:relative;flex:none}
+  .logo .mark::before{content:"";position:absolute;inset:5px 5px auto 5px;height:3px;background:#fff;border-radius:2px;box-shadow:0 5px 0 #fff,0 10px 0 rgba(255,255,255,.55)}
+  .demo-nav{display:flex;gap:2px;margin-left:8px;flex-wrap:wrap}
+  .demo-nav a{font-size:12.5px;font-weight:600;color:#54606e;text-decoration:none;padding:6px 10px;border-radius:7px;white-space:nowrap}
+  .demo-nav a:hover{background:#eef0f3;color:#1c2530}
+  .demo-nav a.active{background:#e9f0f9;color:#233a5c}
+  .demo-tag{margin-left:8px;font-size:10.5px;font-weight:700;letter-spacing:.04em;color:var(--amber);background:var(--amber-tint);padding:2px 8px;border-radius:5px}
+  @media(max-width:760px){.demo-nav{display:none}}
+
+  /* context bar */
+  .ctx{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:13px 16px;margin-top:18px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+  .ctx .no{font-family:var(--mono);font-size:12.5px;font-weight:700;color:var(--primary-d)}
+  .ctx .nm{font-weight:600;font-size:14px}
+  .ctx .cl{font-size:12.5px;color:var(--ink-soft)}
+  .ctx .badge{font-size:11.5px;font-weight:700;padding:3px 10px;border-radius:999px;color:var(--violet);background:var(--violet-tint)}
+  .ctx a.open{margin-left:auto;font-size:12.5px;font-weight:600;color:var(--primary);text-decoration:none;white-space:nowrap}
+  .ctx a.open:hover{text-decoration:underline}
+
+  /* thread */
+  .thread{padding:20px 0 8px}
+  .daydiv{display:flex;align-items:center;gap:12px;margin:18px 0}
+  .daydiv::before,.daydiv::after{content:"";height:1px;background:var(--line);flex:1}
+  .daydiv span{font-size:11.5px;color:var(--ink-faint);font-weight:600}
+  .sys{text-align:center;margin:12px 0}
+  .sys span{font-size:11.5px;color:var(--ink-soft);background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:5px 13px;display:inline-flex;align-items:center;gap:7px}
+  .sys b{color:var(--ink);font-weight:600}
+  .sys .vtag{font-family:var(--mono);font-size:10.5px;font-weight:700;color:var(--green);background:var(--green-tint);padding:1px 7px;border-radius:5px}
+
+  .msg{display:flex;gap:10px;margin:14px 0;align-items:flex-end}
+  .msg .av{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex:none;margin-bottom:18px}
+  .av-sato{background:var(--violet-tint);color:var(--violet)}
+  .av-me{background:var(--primary-tint);color:var(--primary-d)}
+  .msg .col{display:flex;flex-direction:column;max-width:74%}
+  .msg .meta{font-size:11px;color:var(--ink-faint);margin:0 4px 4px;display:flex;gap:8px;align-items:baseline}
+  .msg .meta b{color:var(--ink-soft);font-weight:600;font-size:12px}
+  .bubble{background:var(--surface);border:1px solid var(--line);border-radius:4px 14px 14px 14px;padding:10px 13px;font-size:13.5px;color:var(--ink);box-shadow:var(--shadow);white-space:pre-wrap;word-break:break-word}
+  .msg.me{flex-direction:row-reverse}
+  .msg.me .col{align-items:flex-end}
+  .msg.me .meta{flex-direction:row-reverse}
+  .msg.me .bubble{background:var(--primary-tint);border-color:#cfddee;border-radius:14px 4px 14px 14px;color:#1a2b40}
+  .vref{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;color:var(--primary-d);background:#dde8f5;border-radius:6px;padding:2px 8px;margin-bottom:6px}
+  .vref::before{content:"";width:5px;height:5px;border-radius:50%;background:currentColor}
+  .attach{margin-top:8px;display:flex;align-items:center;gap:9px;background:rgba(255,255,255,.7);border:1px solid var(--line);border-radius:8px;padding:7px 9px}
+  .attach .th{width:34px;height:34px;border-radius:6px;background:linear-gradient(135deg,#dfe7f1,#eef2f7);border:1px solid var(--line);flex:none;display:flex;align-items:center;justify-content:center;color:var(--ink-faint)}
+  .attach .fn{font-size:12px;font-weight:600}
+  .attach .fs{font-size:11px;color:var(--ink-faint)}
+
+  /* composer */
+  .composer{position:fixed;left:0;right:0;bottom:0;background:rgba(255,255,255,.95);backdrop-filter:blur(8px);border-top:1px solid var(--line);z-index:20}
+  .composer-in{max-width:780px;margin:0 auto;padding:12px 20px}
+  .chips{display:flex;gap:7px;margin-bottom:8px;flex-wrap:wrap}
+  .vchip{font-size:11.5px;font-weight:700;color:var(--primary-d);background:var(--primary-tint);border:1px solid #cfddee;border-radius:999px;padding:3px 10px;display:flex;align-items:center;gap:6px}
+  .vchip .x{cursor:pointer;color:var(--primary);font-weight:700}
+  .cbox{display:flex;align-items:flex-end;gap:9px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:7px 7px 7px 12px}
+  .cbox:focus-within{border-color:var(--primary);box-shadow:0 0 0 3px var(--primary-tint)}
+  .iconbtn{border:none;background:none;cursor:pointer;color:var(--ink-faint);padding:7px;border-radius:8px;flex:none}
+  .iconbtn:hover{background:var(--line-soft);color:var(--ink-soft)}
+  textarea{flex:1;border:none;resize:none;font-family:var(--sans);font-size:13.5px;color:var(--ink);background:none;padding:7px 0;max-height:120px;line-height:1.5}
+  textarea:focus{outline:none}
+  .send{border:none;background:var(--primary);color:#fff;width:38px;height:38px;border-radius:9px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex:none;transition:.12s}
+  .send:hover{background:var(--primary-d)}
+  .send:disabled{opacity:.4;cursor:not-allowed}
+  .hint{font-size:11px;color:var(--ink-faint);margin-top:6px;padding-left:2px}
+</style>
+</head>
+<body>
+<div class="topbar"><div class="topbar-in">
+  <div class="logo"><span class="mark"></span>リフォーム見積もり管理</div>
+  <nav class="demo-nav">
+    <a href="index.html">概要</a>
+    <a href="list.html">一覧</a>
+    <a href="new.html">新規</a>
+    <a href="detail.html">詳細</a>
+    <a href="chat.html" class="active">チャット</a>
+    <a href="import.html">取込</a>
+    <a href="diff.html">差分</a>
+    <a href="users.html">設定</a>
+    <span class="demo-tag">サンプル</span>
+  </nav>
+</div></div>
+
+<div class="wrap">
+  <div class="ctx">
+    <span class="no">R2026-0042</span>
+    <span class="nm">グランドメゾン岡山表町 401号</span>
+    <span class="cl">田中 様</span>
+    <span class="badge">交渉中</span>
+    <a class="open" href="detail.html">詳細を開く →</a>
+  </div>
+
+  <div class="thread" id="thread"></div>
+</div>
+
+<div class="composer">
+  <div class="composer-in">
+    <div class="chips" id="chips"></div>
+    <div class="cbox">
+      <button class="iconbtn" id="attachBtn" title="ファイル添付">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5l-8.5 8.5a5 5 0 0 1-7-7l8.5-8.5a3.3 3.3 0 0 1 4.7 4.7L9 16.5a1.6 1.6 0 0 1-2.3-2.3l7.8-7.8"/></svg>
+      </button>
+      <button class="iconbtn" id="verBtn" title="版を参照">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4v16M4 8h11l-2-2M4 14h13l-2-2"/></svg>
+      </button>
+      <textarea id="input" rows="1" placeholder="要望や確認事項を入力…（Enterで送信 / Shift+Enterで改行）"></textarea>
+      <button class="send" id="sendBtn" disabled>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+      </button>
+    </div>
+    <div class="hint">担当者・見積担当が閲覧できます。要望はこの案件に紐づいて残ります。</div>
+  </div>
+</div>
+
+<script>
+  const $ = id => document.getElementById(id);
+  // me = 山本（担当）
+  const thread = [
+    {type:"day", label:"2026年5月18日"},
+    {type:"msg", who:"sato", name:"佐藤（見積担当）", time:"10:42", text:"R2026-0042、初回の見積を作成しました。標準仕様ベースで一旦お出しします。"},
+    {type:"sys", text:"佐藤さんが第1版を追加しました", vtag:"¥1,480,000"},
+    {type:"msg", who:"me", name:"山本", time:"13:05", text:"ありがとうございます。田中様より、キッチンはできるだけ費用を抑えたいとのことです。グレードを下げられますか？"},
+    {type:"day", label:"2026年5月28日"},
+    {type:"msg", who:"sato", name:"佐藤（見積担当）", time:"16:50", text:"了解です。キッチンを標準グレードに、浴室も特注から既製品サイズに変更すると約16万円下がります。第2版に反映します。", vref:"第1版 → 第2版"},
+    {type:"sys", text:"佐藤さんが第2版を追加しました", vtag:"¥1,320,000"},
+    {type:"msg", who:"me", name:"山本", time:"17:40", text:"助かります。あと壁クロスですが、田中様はLDKと廊下だけで良いそうです。寝室は今回見送りで。"},
+    {type:"msg", who:"me", name:"山本", time:"17:41", text:"現況の写真も共有しておきます。", attach:{name:"401_リビング現況.jpg", size:"1.2MB"}},
+    {type:"day", label:"2026年6月5日"},
+    {type:"msg", who:"sato", name:"佐藤（見積担当）", time:"09:30", text:"クロス範囲をLDK＋廊下に縮小し、端数も調整しました。第3版をお出しします。", vref:"第3版"},
+    {type:"sys", text:"佐藤さんが第3版を追加しました", vtag:"¥1,265,000"},
+    {type:"msg", who:"me", name:"山本", time:"10:15", text:"完璧です。これで田中様に提出します。ありがとうございました！"},
+  ];
+
+  function avClass(w){ return w==="me"?"av-me":"av-sato"; }
+  function avText(w){ return w==="me"?"山":"佐"; }
+
+  function render(){
+    $("thread").innerHTML = thread.map(m=>{
+      if(m.type==="day") return `<div class="daydiv"><span>${m.label}</span></div>`;
+      if(m.type==="sys") return `<div class="sys"><span><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4v16M4 8h11l-2-2M4 14h13l-2-2"/></svg><b>${m.text}</b>${m.vtag?`<span class="vtag">${m.vtag}</span>`:''}</span></div>`;
+      const me = m.who==="me";
+      const vref = m.vref?`<span class="vref">${m.vref}</span>`:"";
+      const attach = m.attach?`<div class="attach"><div class="th"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg></div><div><div class="fn">${m.attach.name}</div><div class="fs">${m.attach.size}</div></div></div>`:"";
+      return `<div class="msg ${me?'me':''}">
+        <div class="av ${avClass(m.who)}">${avText(m.who)}</div>
+        <div class="col">
+          <div class="meta"><b>${m.name}</b><span>${m.time}</span></div>
+          <div class="bubble">${vref}${escapeHtml(m.text)}${attach}</div>
+        </div>
+      </div>`;
+    }).join("");
+    window.scrollTo({top:document.body.scrollHeight});
+  }
+  function escapeHtml(s){return s.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));}
+  render();
+
+  // composer
+  const input=$("input"), sendBtn=$("sendBtn"), chips=$("chips");
+  let verRef=null;
+  function autosize(){ input.style.height="auto"; input.style.height=Math.min(input.scrollHeight,120)+"px"; }
+  function refresh(){ sendBtn.disabled = input.value.trim()===""; }
+  input.addEventListener("input",()=>{autosize();refresh();});
+  input.addEventListener("keydown",e=>{
+    if(e.key==="Enter" && !e.shiftKey){ e.preventDefault(); send(); }
+  });
+
+  function renderChips(){
+    chips.innerHTML = verRef?`<span class="vchip">${verRef}<span class="x" id="rmVer">×</span></span>`:"";
+    if(verRef) $("rmVer").onclick=()=>{verRef=null;renderChips();};
+  }
+  $("verBtn").onclick=()=>{ verRef = verRef?null:"第3版を参照"; renderChips(); };
+  $("attachBtn").onclick=()=>{
+    const inp=document.createElement("input"); inp.type="file";
+    inp.onchange=()=>{ if(inp.files[0]) pendingAttach=inp.files[0].name; sendBtn.disabled=false; };
+    inp.click();
+  };
+  let pendingAttach=null;
+
+  function now(){ const d=new Date(); return String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0"); }
+  function send(){
+    const t=input.value.trim();
+    if(!t && !pendingAttach) return;
+    const msg={type:"msg",who:"me",name:"山本",time:now(),text:t||""};
+    if(verRef) msg.vref=verRef.replace("を参照","");
+    if(pendingAttach) msg.attach={name:pendingAttach,size:"—"};
+    thread.push(msg);
+    input.value=""; verRef=null; pendingAttach=null;
+    autosize(); refresh(); renderChips(); render();
+  }
+  $("sendBtn").onclick=send;
+</script>
+</body>
+</html>
