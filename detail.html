@@ -138,6 +138,49 @@
   .hint{font-size:11.5px;color:var(--ink-faint);margin:-6px 0 14px}
   .mock-flag{display:inline-block;font-size:11px;color:var(--amber);background:var(--amber-tint);padding:3px 9px;border-radius:6px;font-weight:600}
 </style>
+<style>
+.panel-h .note{margin-left:auto;font-size:11.5px;color:var(--ink-faint)}
+.chat-thread{max-height:440px;overflow-y:auto;padding:8px 18px 4px}
+.chat-thread .daydiv{display:flex;align-items:center;gap:12px;margin:16px 0}
+.chat-thread .daydiv::before,.chat-thread .daydiv::after{content:"";height:1px;background:var(--line);flex:1}
+.chat-thread .daydiv span{font-size:11.5px;color:var(--ink-faint);font-weight:600}
+.chat-thread .sys{text-align:center;margin:12px 0}
+.chat-thread .sys span{font-size:11.5px;color:var(--ink-soft);background:#fafbfc;border:1px solid var(--line);border-radius:999px;padding:5px 13px;display:inline-flex;align-items:center;gap:7px}
+.chat-thread .sys b{color:var(--ink);font-weight:600}
+.chat-thread .sys .vtag{font-family:var(--mono);font-size:10.5px;font-weight:700;color:var(--green);background:var(--green-tint);padding:1px 7px;border-radius:5px}
+.msg{display:flex;gap:10px;margin:13px 0;align-items:flex-end}
+.msg .av{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:700;flex:none;margin-bottom:17px}
+.av-sato{background:var(--violet-tint);color:var(--violet)}
+.av-me{background:var(--primary-tint);color:var(--primary-d)}
+.msg .col{display:flex;flex-direction:column;max-width:76%}
+.msg .meta{font-size:11px;color:var(--ink-faint);margin:0 4px 4px;display:flex;gap:8px;align-items:baseline}
+.msg .meta b{color:var(--ink-soft);font-weight:600;font-size:12px}
+.bubble{background:#fafbfc;border:1px solid var(--line);border-radius:4px 13px 13px 13px;padding:9px 12px;font-size:13.5px;color:var(--ink);white-space:pre-wrap;word-break:break-word}
+.msg.me{flex-direction:row-reverse}
+.msg.me .col{align-items:flex-end}
+.msg.me .meta{flex-direction:row-reverse}
+.msg.me .bubble{background:var(--primary-tint);border-color:#cfddee;border-radius:13px 4px 13px 13px;color:#1a2b40}
+.vref{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;color:var(--primary-d);background:#dde8f5;border-radius:6px;padding:2px 8px;margin-bottom:6px}
+.vref::before{content:"";width:5px;height:5px;border-radius:50%;background:currentColor}
+.attach{margin-top:8px;display:flex;align-items:center;gap:9px;background:rgba(255,255,255,.7);border:1px solid var(--line);border-radius:8px;padding:7px 9px}
+.attach .th{width:32px;height:32px;border-radius:6px;background:linear-gradient(135deg,#dfe7f1,#eef2f7);border:1px solid var(--line);flex:none;display:flex;align-items:center;justify-content:center;color:var(--ink-faint)}
+.attach .fn{font-size:12px;font-weight:600}
+.attach .fs{font-size:11px;color:var(--ink-faint)}
+.chat-composer{border-top:1px solid var(--line-soft);padding:12px 18px}
+.chat-chips{display:flex;gap:7px;margin-bottom:8px;flex-wrap:wrap}
+.chat-chips:empty{display:none}
+.vchip{font-size:11.5px;font-weight:700;color:var(--primary-d);background:var(--primary-tint);border:1px solid #cfddee;border-radius:999px;padding:3px 10px;display:flex;align-items:center;gap:6px}
+.vchip .x{cursor:pointer;color:var(--primary);font-weight:700}
+.cbox{display:flex;align-items:flex-end;gap:8px;background:#fff;border:1px solid var(--line);border-radius:12px;padding:6px 6px 6px 12px}
+.cbox:focus-within{border-color:var(--primary);box-shadow:0 0 0 3px var(--primary-tint)}
+.iconbtn{border:none;background:none;cursor:pointer;color:var(--ink-faint);padding:7px;border-radius:8px;flex:none}
+.iconbtn:hover{background:var(--line-soft);color:var(--ink-soft)}
+.chat-composer textarea{flex:1;border:none;resize:none;font-family:var(--sans);font-size:13.5px;color:var(--ink);background:none;padding:7px 0;max-height:120px;line-height:1.5}
+.chat-composer textarea:focus{outline:none}
+.send{border:none;background:var(--primary);color:#fff;width:36px;height:36px;border-radius:9px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex:none}
+.send:hover{background:var(--primary-d)}
+.send:disabled{opacity:.4;cursor:not-allowed}
+</style>
 </head>
 <body>
 
@@ -157,7 +200,6 @@
 <a href="list.html">一覧</a>
 <a href="new.html">新規</a>
 <a href="detail.html">詳細</a>
-<a href="chat.html">チャット</a>
 <a href="import.html">取込</a>
 <a href="diff.html">差分</a>
 <a href="users.html">設定</a>
@@ -278,6 +320,26 @@
         </div>
       </div>
     </section>
+  </div>
+
+  <!-- やり取り（チャット） -->
+  <div class="panel">
+    <div class="panel-h">
+      <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H8l-4 4V5a2 2 0 0 1 2-2h13a2 2 0 0 1 2 2z"/></svg>
+      <h2>やり取り（チャット）</h2>
+      <span class="note">担当者・見積担当が閲覧</span>
+    </div>
+    <div class="chat-thread" id="chatThread"></div>
+    <div class="chat-composer">
+      <div class="chat-chips" id="chatChips"></div>
+      <div class="cbox">
+        <button class="iconbtn" id="cAttach" title="ファイル添付"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5l-8.5 8.5a5 5 0 0 1-7-7l8.5-8.5a3.3 3.3 0 0 1 4.7 4.7L9 16.5a1.6 1.6 0 0 1-2.3-2.3l7.8-7.8"/></svg></button>
+        <button class="iconbtn" id="cVer" title="版を参照"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4v16M4 8h11l-2-2M4 14h13l-2-2"/></svg></button>
+        <textarea id="cInput" rows="1" placeholder="要望や確認事項を入力…（Enterで送信 / Shift+Enterで改行）"></textarea>
+        <button class="send" id="cSend" disabled><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg></button>
+      </div>
+      <input type="file" id="cFile" style="display:none">
+    </div>
   </div>
 </div>
 
@@ -422,6 +484,71 @@
     addLog(`<b>山本</b> が第${nextNo}版を追加（${yen(amt)}）`);
     closeModal();
   };
+</script>
+<script>
+(function(){
+  var thread=[
+    {type:"day",label:"2026年5月18日"},
+    {type:"msg",who:"sato",name:"佐藤（見積担当）",time:"10:42",text:"R2026-0042、初回の見積を作成しました。標準仕様ベースで一旦お出しします。"},
+    {type:"sys",text:"佐藤さんが第1版を追加しました",vtag:"\u00a51,480,000"},
+    {type:"msg",who:"me",name:"山本",time:"13:05",text:"ありがとうございます。田中様より、キッチンはできるだけ費用を抑えたいとのことです。グレードを下げられますか？"},
+    {type:"day",label:"2026年5月28日"},
+    {type:"msg",who:"sato",name:"佐藤（見積担当）",time:"16:50",text:"了解です。キッチンを標準グレードに、浴室も特注から既製品サイズに変更すると約16万円下がります。第2版に反映します。",vref:"第1版 → 第2版"},
+    {type:"sys",text:"佐藤さんが第2版を追加しました",vtag:"\u00a51,320,000"},
+    {type:"msg",who:"me",name:"山本",time:"17:40",text:"助かります。あと壁クロスですが、田中様はLDKと廊下だけで良いそうです。寝室は今回見送りで。"},
+    {type:"msg",who:"me",name:"山本",time:"17:41",text:"現況の写真も共有しておきます。",attach:{name:"401_リビング現況.jpg",size:"1.2MB"}},
+    {type:"day",label:"2026年6月5日"},
+    {type:"msg",who:"sato",name:"佐藤（見積担当）",time:"09:30",text:"クロス範囲をLDK＋廊下に縮小し、端数も調整しました。第3版をお出しします。",vref:"第3版"},
+    {type:"sys",text:"佐藤さんが第3版を追加しました",vtag:"\u00a51,265,000"},
+    {type:"msg",who:"me",name:"山本",time:"10:15",text:"完璧です。これで田中様に提出します。ありがとうございました！"}
+  ];
+  var threadEl=document.getElementById("chatThread");
+  function esc(s){return s.replace(/[&<>]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c];});}
+  function avC(w){return w==="me"?"av-me":"av-sato";}
+  function avT(w){return w==="me"?"山":"佐";}
+  function render(){
+    threadEl.innerHTML=thread.map(function(m){
+      if(m.type==="day")return '<div class="daydiv"><span>'+m.label+'</span></div>';
+      if(m.type==="sys")return '<div class="sys"><span><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4v16M4 8h11l-2-2M4 14h13l-2-2"/></svg><b>'+m.text+'</b>'+(m.vtag?'<span class="vtag">'+m.vtag+'</span>':'')+'</span></div>';
+      var me=m.who==="me";
+      var vref=m.vref?'<span class="vref">'+m.vref+'</span>':'';
+      var attach=m.attach?'<div class="attach"><div class="th"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg></div><div><div class="fn">'+esc(m.attach.name)+'</div><div class="fs">'+m.attach.size+'</div></div></div>':'';
+      return '<div class="msg '+(me?'me':'')+'"><div class="av '+avC(m.who)+'">'+avT(m.who)+'</div><div class="col"><div class="meta"><b>'+m.name+'</b><span>'+m.time+'</span></div><div class="bubble">'+vref+esc(m.text)+attach+'</div></div></div>';
+    }).join("");
+    threadEl.scrollTop=threadEl.scrollHeight;
+  }
+  render();
+  var input=document.getElementById("cInput"),sendBtn=document.getElementById("cSend"),chips=document.getElementById("chatChips");
+  var fileInput=document.getElementById("cFile");
+  var verRef=null,pendingAttach=null;
+  function autosize(){input.style.height="auto";input.style.height=Math.min(input.scrollHeight,120)+"px";}
+  function refresh(){sendBtn.disabled=(input.value.trim()==="" && !pendingAttach);}
+  function renderChips(){
+    var html="";
+    if(verRef)html+='<span class="vchip">'+verRef+'<span class="x" data-x="ver">×</span></span>';
+    if(pendingAttach)html+='<span class="vchip" style="background:#fff;color:#54606e;border-color:#e4e7ec">📎 '+esc(pendingAttach)+'<span class="x" data-x="att">×</span></span>';
+    chips.innerHTML=html;
+    var v=chips.querySelector('[data-x=ver]');if(v)v.onclick=function(){verRef=null;renderChips();};
+    var a=chips.querySelector('[data-x=att]');if(a)a.onclick=function(){pendingAttach=null;renderChips();refresh();};
+  }
+  input.addEventListener("input",function(){autosize();refresh();});
+  input.addEventListener("keydown",function(e){if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send();}});
+  document.getElementById("cVer").onclick=function(){verRef=verRef?null:"第3版を参照";renderChips();};
+  document.getElementById("cAttach").onclick=function(){fileInput.value="";fileInput.click();};
+  fileInput.onchange=function(){if(fileInput.files[0]){pendingAttach=fileInput.files[0].name;renderChips();refresh();}};
+  function now(){var d=new Date();return ("0"+d.getHours()).slice(-2)+":"+("0"+d.getMinutes()).slice(-2);}
+  function send(){
+    var t=input.value.trim();
+    if(!t&&!pendingAttach)return;
+    var msg={type:"msg",who:"me",name:"山本",time:now(),text:t||""};
+    if(verRef)msg.vref=verRef.replace("を参照","");
+    if(pendingAttach)msg.attach={name:pendingAttach,size:"—"};
+    thread.push(msg);
+    input.value="";verRef=null;pendingAttach=null;
+    autosize();refresh();renderChips();render();
+  }
+  sendBtn.onclick=send;
+})();
 </script>
 </body>
 </html>
